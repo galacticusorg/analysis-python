@@ -31,7 +31,7 @@ class GalacticusParameters(xmlTree):
         """
         get_parameter: Return value of specified parameter.
         
-        USAGE: value = getParameter(param)
+        USAGE: value = GalacticusParameters().getParameter(param)
 
             INPUT
                 param -- name of parameter
@@ -58,10 +58,10 @@ class GalacticusParameters(xmlTree):
         """
         getParent: Return name of parent element.
 
-        USAGE: name = getParent(elem)
+        USAGE: name = GalacticusParameters().getParent(param)
 
             INPUT
-                elem -- name of current element
+                param -- name of parameter
             OUTPUT
                 name -- string with name of parent
 
@@ -78,6 +78,15 @@ class GalacticusParameters(xmlTree):
         return name
 
     def constructDictionary(self):
+        """
+        constructDictionary(): Return parameter set as python dictionary.
+
+        USAGE: parameter_dict = GalacticusParameters().constructDictionary()
+
+            OUTPUT
+                parameter_dict -- dictionary containing parameter set
+
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         params = {}
         for e in self.treeMap.keys():
@@ -85,7 +94,19 @@ class GalacticusParameters(xmlTree):
         return params
 
     
-    def setParameter(self,param,value,parent=None,selfCreate=False):        
+    def setParameter(self,param,value,parent=None,selfCreate=False): 
+        """
+        setParameter(): Update parameter value.
+
+        USAGE: GalacticusParameters().setParameter(param,value,[parent=None],[selfCreate=False])
+        
+           INPUT
+               param      -- Name of parameter.
+               value      -- Value to assign to parameter.
+               parent     -- Name of parent element. (Default=None, assumes parent is root.)
+               selfCreate -- Create sections of tree branch that are missing. (Default=False.)
+
+        """    
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         # Convert paramter value to string
         if np.ndim(value) == 0:
@@ -99,6 +120,15 @@ class GalacticusParameters(xmlTree):
 
     
     def removeParameter(self,param):
+        """
+        removeParameter(): Remove a parameter from a file.
+        
+        USAGE:  GalacticusParameters().removeParameter(param)
+
+            INPUT
+               param -- Name of parameter to remove.
+
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.removeElement(param)
         return
