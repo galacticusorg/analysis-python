@@ -1,6 +1,6 @@
 # Galacticus Processing & Analysis Python Scripts
 
-This repository contains a python pacakge for processing and analysing galaxy catalogues output from the Galacticus semi-analytical galaxy formation model.
+This repository contains a python pacakge for processing and analyzing galaxy catalogues output from the Galacticus semi-analytical galaxy formation model.
 
 # Download and installation
 
