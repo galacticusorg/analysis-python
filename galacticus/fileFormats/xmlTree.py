@@ -49,7 +49,7 @@ class xmlTree(object):
             self.root = self.tree.getroot()                
             self.treeMap = mapElements(self.root)
         if self._verbose:
-            print(classname+"(): Root is '"+self.root.tag+"'")            
+            print(classname+"(): Root of XML tree is '"+self.root.tag+"'.")            
         return
         
     def getElement(self,path):
@@ -72,14 +72,14 @@ class xmlTree(object):
         if name in self.treeMap.keys() and not overwrite:
             return
         if name in self.treeMap.keys() and overwrite:
-            elem = getElement(self.treeMap[name]).clear
+            elem = self.getElement(self.treeMap[name]).clear
         if parent is None or parent==self.root.tag:
             path = self.root.tag
             parent = self.root
         else:
             if parent not in self.treeMap.keys():
                 self.createBranch(parent)
-            path = self.treeMap[parent]
+            path = self.treeMap[parent.split("/")[-1]]
             parent = self.getElement(path)
         if parent is None:
             raise ValueError(funcname+"(): error in path to parent element -- some nodes missing?"+\
@@ -105,20 +105,30 @@ class xmlTree(object):
             elem.text = text
         return
 
+    def removeElement(self,name):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        path = self.treeMap[name].replace("/"+name,"")
+        elem = self.getElement(path)
+        elem.remove(elem.find(name))
+        return
+
     def createBranch(self,path,parent=None):        
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if parent is None or parent==self.root.tag:
             parent = self.root
-            parentPath = "root"
+            parentPath = self.root.tag
         else:            
             parentPath = self.treeMap[parent]
             parent = self.getElement(parentPath)
         nodes = path.split("/")        
-        for node in nodes:
-            if parent.find(node) is None:
-                self.createElement(node,parent=parent.tag)
-                self.treeMap[node] = parentPath + "/" + node                
-            parent = parent.find(node)
+        for node in nodes:            
+            if node==self.root.tag:
+                parent = self.root
+            else:
+                if parent.find(node) is None:
+                    self.createElement(node,parent=parent.tag)
+                    self.treeMap[node] = parentPath + "/" + node                
+                parent = parent.find(node)
             parentPath = self.treeMap[node]
         return
                             
@@ -128,8 +138,6 @@ class xmlTree(object):
             if parent not in self.treeMap.keys():
                 self.createBranch(parent,parent=None)                
             parentPath = self.treeMap[parent]
-            print self.treeMap["hello2"]
-            print self.treeMap["world2"]
             node = self.getElement(parentPath)
         else:
             node = self.root
