@@ -9,6 +9,17 @@ from .. import checkDatasetsPath,DATASETS_PATH
 
 
 def locateSimulationParameterFile(simulation):
+    """
+    locateSimulationParameterFile(): Locate XML specifications file for specified simulation.
+                                     Raises an IOError if file does not exist.
+
+    USAGE:  xmlFile = locateSimulationParameterFile(simulation)
+
+       INPUT  
+           simulation -- Name of simulation.
+       OUTPUT
+           xmlFile    -- Path to specifications file for this simulation.
+    """
     checkDatasetsPath()
     # First check static datasets
     if not os.path.exists(DATASETS_PATH+"static/simulations"):                       
@@ -42,8 +53,18 @@ def locateSimulationParameterFile(simulation):
 
 
 class SimulationBox(object):
+    """
+    SimulationBox: class to store simulation box size and provide function to wrap positions
+                   for periodic boxes.
+                   
+        Functions:
+                   wrap(): Wrap (X,Y,Z) positions for periodic boxes.
+    
 
+    """
     def __init__(self,size,units=None,periodic=True):
+        classname = self.__class__.__name__
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.size = size
         self.units = units
         self.periodic = periodic
@@ -57,17 +78,48 @@ class SimulationBox(object):
         return x
         
     def wrap(self,x,y,z):
+        """
+        wrap(): Wrap positions for periodic simulation boxes.
+
+        USAGE: xout,yout,zout = SimulationBox().wrap(x,y,z)
+
+             INPUT
+                x,y,z -- Cartesian positions (numpy.array or float).
+        
+             OUTPUT
+               xout,yout,zout -- Cartesian positions wrapped to simulation box
+                                 boundaries (numpy.array or float). If the
+                                 simulation box is not periodic, these outputs
+                                 will be equal to the inputs.
+                
+        """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if not self.periodic:
-            warnings.warn("Cannot wrap positions. Simulation box is not periodic.")
+            warnings.warn(funcname+"(): Cannot wrap positions. Simulation box is not periodic.")
             return x,y,z
-        xnew = self._wrap_dimension(0,np.copy(x))
-        ynew = self._wrap_dimension(1,np.copy(y))
-        znew = self._wrap_dimension(2,np.copy(z))
-        return xnew,ynew,znew
+        if np.ndim(x) == 0:
+            xin = np.array([x])
+            yin = np.array([y])
+            zin = np.array([z])
+        else:
+            xin = np.array(x)
+            yin = np.array(y)
+            zin = np.array(z)
+        xout = self._wrap_dimension(0,np.copy(xin))
+        yout = self._wrap_dimension(1,np.copy(yin))
+        zout = self._wrap_dimension(2,np.copy(zin))
+        if np.ndim(x) == 0:
+            xout = xout[0]
+            yout = yout[0]
+            zout = zout[0]
+        return xout,yout,zout
 
         
 class SimulationParticles(object):
-    
+    """
+    SimulationParticles: class to store mass and number of simulation particles.
+
+    """
     def __init__(self,number,mass,units=None):
         self.number = number
         self.mass = mass
@@ -76,7 +128,16 @@ class SimulationParticles(object):
 
 
 class Simulation(object):
-    
+    """
+    Simulation: class for storing simulation specifications and for quering snapshot 
+                redshift values.
+
+        Functions:  
+                   specifications(): Print simulation specifications.
+                   redshift(): Return redshift for user-specified snapshot numbers.
+                   snapshot(): Return snapshot closest to specified redshift value.
+
+    """
     def __init__(self,simulation,verbose=False):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
@@ -121,6 +182,12 @@ class Simulation(object):
         return
     
     def specifications(self):
+        """
+        specifications(): Print simulation specifications.
+
+        USAGE: Simulation().specifications()
+
+        """
         ndash = 65
         print("-"*ndash                                                                              )
         print(" SPECIFICATIONS: "+self.name                                                          )
@@ -139,6 +206,24 @@ class Simulation(object):
         return
 
     def redshift(self,snapshot,excludeOutOfBounds=True):
+        """
+        redshift(): Return redshift of specified snasphot numbers.
+
+
+        USAGE: z = Simulation().redshift(snapshot,[excludeOutOfBounds=True])
+
+              INPUT
+                   snapshot           -- List or integer of snapshot number(s).
+                   excludeOutOfBounds -- Return NaN for snapshots outside of the range of snapshots 
+                                         of the simulation. If True, the redshift will be numpy.nan
+                                         and if False, the redshift will be set to that of the closet
+                                         snapshot (most likely the lowest or highest snapshot).
+                                         [Default=True]
+
+              OUTPUT
+                   z                  -- Numpy array or float of redshifts.
+
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if np.ndim(snapshot) == 0:
             search = np.array([snapshot])
@@ -160,6 +245,28 @@ class Simulation(object):
         return redshift
 
     def snapshot(self,z,return_redshift=False,excludeOutOfBounds=True):
+        """
+        snapshot(): Return snapshots nearest to specified redshifts.
+
+
+        USAGE: snap [,zsnap]  = Simulation().snaphot(z,[return_redshift=True],\
+                                                      [excludeOutOfBounds=True])
+
+              INPUT              
+                   z                  -- List or float of redshifts.
+                   return_redshift    -- Return also the redshift of the identified snapshots.
+                                         [Default=False]
+                   excludeOutOfBounds -- Return -999 for redshifts outside of the range of redshifts
+                                         of the simulation. If True, the snapshot will be -999
+                                         and if False, the snapshot will be set to that of the closet
+                                         snapshot (most likely the lowest or highest redshift).
+                                         [Default=True]
+
+              OUTPUT
+                   snap               -- Numpy array or integer of snapshot numbers.
+                   zsnap              -- Numpy array or float of snapshot redshifts.
+
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
         if np.ndim(z) == 0:
             zSearch = np.array([z])
