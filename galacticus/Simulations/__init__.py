@@ -10,15 +10,33 @@ from .. import checkDatasetsPath,DATASETS_PATH
 
 def locateSimulationParameterFile(simulation):
     checkDatasetsPath()
-    if not os.path.exists(DATASETS_PATH+"static/simulations"):
-        msg = "ERROR! Sub-directory 'simulations' not found in datasets."
-        raise RuntimeError(msg)
+    # First check static datasets
+    if not os.path.exists(DATASETS_PATH+"static/simulations"):                       
+        msg = "WARNING! Sub-directory 'simulations' not found in datasets."
+        warnings.warn(msg)
     simulationFile = DATASETS_PATH+"static/simulations/"+simulation.lower()+".xml"
-    if not os.path.exists(simulationFile):        
-        simulations = glob.glob(DATASETS_PATH+"static/simulations/*.xml")
-        simulations = [simfile.split("/")[-1].replace(".xml","") for simfile in simulations]
-        msg = "ERROR! Unable to locate simulation parameters file. Simulations available "+\
-            "include: "+", ".join(simulations)+"."
+    if os.path.exists(simulationFile):
+        return simulationFile
+    else:
+        simulationFile = None
+    # If cannot find file in static datasets check in dynamic datasets
+    if not os.path.exists(DATASETS_PATH+"dynamic/simulations"):
+        os.makedirs(DATASETS_PATH+"dynamic/simulations")
+    simulationFile = DATASETS_PATH+"dynamic/simulations/"+simulation.lower()+".xml"
+    if os.path.exists(simulationFile):        
+        return simulationFile
+    else:
+        simulationFile = None
+    # Raise error -- if we get to here then the file must not exist.
+    if simulationFile is None:
+        static = glob.glob(DATASETS_PATH+"static/simulations/*.xml")
+        static = [simfile.split("/")[-1].replace(".xml","") for simfile in static]
+        dynamic = glob.glob(DATASETS_PATH+"dynamic/simulations/*.xml")
+        dynamic = [simfile.split("/")[-1].replace(".xml","") for simfile in dynamic]
+        msg = "Unable to locate simulation parameters file. Simulations available "+\
+            "in static include: "+", ".join(static)+"."
+        if len(dynamic) > 0:
+            msg = msg + "Simulations available in dnynamic include: "+", ".join(dynamic)+"."
         raise IOError(msg)
     return simulationFile
 
