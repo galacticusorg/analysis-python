@@ -5,49 +5,47 @@ import numpy as np
 import warnings
 import xml.etree.ElementTree as ET
 from scipy.interpolate import interp1d
-from .. import checkDatasetsPath,DATASETS_PATH
+from ..data import GalacticusData
 
 
-def locateSimulationSpecsFile(simulation):
+def locateSimulationSpecsFile(simulation,path=None,verbose=False):
     """
     locateSimulationSpecsFile(): Locate XML specifications file for specified simulation.
                                  Raises an IOError if file does not exist.
 
-    USAGE:  xmlFile = locateSimulationSpecsFile(simulation)
+    USAGE:  xmlFile = locateSimulationSpecsFile(simulation,[path=None],[verbose=False])
 
        INPUT  
            simulation -- Name of simulation.
+           path       -- Path to datasets repository. If None, will search for path in
+                         environment variables (stored as 'GALACTICUS_DATASETS'). 
+                         [Default=None]
+          verbose     -- Print additional information. [Default=False]                         
+           
        OUTPUT
            xmlFile    -- Path to specifications file for this simulation.
     """
-    checkDatasetsPath()
-    # First check static datasets
-    if not os.path.exists(DATASETS_PATH+"static/simulations"):                       
-        msg = "WARNING! Sub-directory 'simulations' not found in datasets."
-        warnings.warn(msg)
-    simulationFile = DATASETS_PATH+"static/simulations/"+simulation.lower()+".xml"
-    if os.path.exists(simulationFile):
-        return simulationFile
-    else:
+    fileName = simulation.lower()+".xml"
+    DATA = GalacticusData(path=path,verbose=verbose)
+    # First check dynamic datasets
+    if not os.path.exists(DATA.dynamic+"simulations"):        
+        os.makedirs(DATA.dynamic+"simulations")
         simulationFile = None
-    # If cannot find file in static datasets check in dynamic datasets
-    if not os.path.exists(DATASETS_PATH+"dynamic/simulations"):
-        os.makedirs(DATASETS_PATH+"dynamic/simulations")
-    simulationFile = DATASETS_PATH+"dynamic/simulations/"+simulation.lower()+".xml"
-    if os.path.exists(simulationFile):        
-        return simulationFile
-    else:
-        simulationFile = None
+    else:        
+        simulationFile = DATA.searchDynamic(fileName,errorNotFound=False)
+    # Secondly check static datasets        
+    simulationFile = DATA.searchStatic(fileName,errorNotFound=False)
     # Raise error -- if we get to here then the file must not exist.
     if simulationFile is None:
-        static = glob.glob(DATASETS_PATH+"static/simulations/*.xml")
+        static = glob.glob(DATA.static+"simulations/*.xml")
         static = [simfile.split("/")[-1].replace(".xml","") for simfile in static]
-        dynamic = glob.glob(DATASETS_PATH+"dynamic/simulations/*.xml")
+        dynamic = glob.glob(DATA.dynamic+"simulations/*.xml")
         dynamic = [simfile.split("/")[-1].replace(".xml","") for simfile in dynamic]
-        msg = "Unable to locate simulation parameters file. Simulations available "+\
-            "in static include: "+", ".join(static)+"."
+        msg = "Unable to locate simulation specifications file. Simulations available "+\
+            "in static datasets include: "+", ".join(static)+"."
         if len(dynamic) > 0:
-            msg = msg + "Simulations available in dynamic include: "+", ".join(dynamic)+"."
+            msg = msg + "Simulations available in dynamic datasets include: "+\
+                ", ".join(dynamic)+"."
         raise IOError(msg)
     return simulationFile
 
@@ -132,18 +130,27 @@ class Simulation(object):
     Simulation: class for storing simulation specifications and for quering snapshot 
                 redshift values.
 
+        USAGE: SIM = Simulation(simulation,[path=None],[verbose=False])
+
+            INPUT
+                 simulation -- Simulation name.
+                 path       -- Path to datasets repository. If None, will search for path in
+                               environment variables (stored as 'GALACTICUS_DATASETS'). 
+                               [Default=None]
+                 verbose    -- Print additional information. [Default=False]                         
+
         Functions:  
                    specifications(): Print simulation specifications.
                    redshift(): Return redshift for user-specified snapshot numbers.
                    snapshot(): Return snapshot closest to specified redshift value.
 
     """
-    def __init__(self,simulation,verbose=False):
+    def __init__(self,simulation,path=None,verbose=False):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.verbose = verbose    
         # Load XML file of simulation specifications
-        xmlFile = locateSimulationSpecsFile(simulation)
+        xmlFile = locateSimulationSpecsFile(simulation,path=path,verbose=verbose)
         xmlStruct = ET.parse(xmlFile)
         xmlRoot = xmlStruct.getroot()
         xmlMap = {c.tag:p for p in xmlRoot.iter() for c in p}
