@@ -8,12 +8,12 @@ from scipy.interpolate import interp1d
 from .. import checkDatasetsPath,DATASETS_PATH
 
 
-def locateSimulationParameterFile(simulation):
+def locateSimulationSpecsFile(simulation):
     """
-    locateSimulationParameterFile(): Locate XML specifications file for specified simulation.
-                                     Raises an IOError if file does not exist.
+    locateSimulationSpecsFile(): Locate XML specifications file for specified simulation.
+                                 Raises an IOError if file does not exist.
 
-    USAGE:  xmlFile = locateSimulationParameterFile(simulation)
+    USAGE:  xmlFile = locateSimulationSpecsFile(simulation)
 
        INPUT  
            simulation -- Name of simulation.
@@ -47,7 +47,7 @@ def locateSimulationParameterFile(simulation):
         msg = "Unable to locate simulation parameters file. Simulations available "+\
             "in static include: "+", ".join(static)+"."
         if len(dynamic) > 0:
-            msg = msg + "Simulations available in dnynamic include: "+", ".join(dynamic)+"."
+            msg = msg + "Simulations available in dynamic include: "+", ".join(dynamic)+"."
         raise IOError(msg)
     return simulationFile
 
@@ -143,7 +143,7 @@ class Simulation(object):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.verbose = verbose    
         # Load XML file of simulation specifications
-        xmlFile = locateSimulationParameterFile(simulation)
+        xmlFile = locateSimulationSpecsFile(simulation)
         xmlStruct = ET.parse(xmlFile)
         xmlRoot = xmlStruct.getroot()
         xmlMap = {c.tag:p for p in xmlRoot.iter() for c in p}
