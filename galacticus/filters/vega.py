@@ -4,6 +4,7 @@ import sys
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.integrate import romb
+import xml.etree.ElementTree as ET
 from ..data import GalacticusData
 from .io import loadFilterFromFile
 from . import Filter
@@ -29,17 +30,14 @@ class VegaSpectrum(object):
                              transmission cuve.
 
     """
-    def __init__(self,path=None,fileName=None,verbose=False):
+    def __init__(self,path=None,fileName="A0V_Castelli.xml",verbose=False):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.verbose = verbose
         # Identify spectrum file
         DATA = GalacticusData(path=path,verbose=self.verbose)
-        if fileName is None:
-            fileName = "A0V_Castelli.xml"
-        else:
-            if not fileName.endswith(".xml"):
-                fileName = fileName + ".xml"
+        if not fileName.endswith(".xml"):
+            fileName = fileName + ".xml"
         spectrumFile = DATA.search(fileName)
         # Open file
         xmlStruct = ET.parse(spectrumFile)
@@ -121,13 +119,13 @@ class VegaOffset(Filter):
     def __init__(self,path=None,filterName="Buser_V",spectrumFile="A0V_Castelli.xml",verbose=False):        
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        super(self.__class__.__name__,self).__init__(verbose=verbose)
+        super(self.__class__,self).__init__()
+        self.verbose = verbose
         DATA = GalacticusData(path=path,verbose=self.verbose)
         filterFile = DATA.search(filterName+".xml")
         self.VBAND = loadFilterFromFile(filterFile)
         self.fluxVega = None
         self.fluxAB = None
-        spectrumFile = DATA.search(spectrumFile)
         self.VegaSpectrum = VegaSpectrum(path=path,fileName=spectrumFile,verbose=self.verbose)
         return
 

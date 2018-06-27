@@ -3,8 +3,6 @@
 import __future__
 import sys
 import numpy as np
-import xml.etree.ElementTree as ET
-from ..fileFormat.xmlTree import formatFile
 
 def computeEffectiveWavelength(wavelength,transmission):
     """

@@ -4,14 +4,14 @@ import sys,os
 import numpy as np
 import xml.etree.ElementTree as ET
 from . import Filter,computeEffectiveWavelength
-from ..fileFormat.xmlTree import formatFile
+from ..fileFormats.xmlTree import formatFile
 from ..data import GalacticusData
 
 def loadFilterFromFile(filterFile):
     FILTER = Filter()
     FILTER.file = filterFile
     # Open xml file and load structure
-    xmlStruct = ET.parse(self.file)
+    xmlStruct = ET.parse(FILTER.file)
     xmlRoot = xmlStruct.getroot()
     xmlMap = {c.tag:p for p in xmlRoot.iter() for c in p}
     # Read filter transmission
@@ -38,7 +38,7 @@ def loadFilterFromFile(filterFile):
     del xmlStruct, xmlRoot,xmlMap
     return FILTER
 
-def writeFilterToFile(FILTER,path):
+def writeFilterToFile(FILTER,path,verbose=True):
     # Create tree root
     root = ET.Element("filter")
     # Add name and other descriptions
@@ -75,7 +75,7 @@ def writeFilterToFile(FILTER,path):
     tree = ET.ElementTree(root)
     if not os.path.exists(path):
         os.makedirs(path)
-    path = path + self.name+".xml"
+    path = path + FILTER.name+".xml"
     if verbose:
         print(funcname+"(): writing filter to file: "+path)
     tree.write(path)
