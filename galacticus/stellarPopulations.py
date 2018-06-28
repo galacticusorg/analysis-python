@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import sys,os,fnmatch,glob
+import sys,os,fnmatch,glob,shutil
 import numpy as np
 import requests
 import tarfile
@@ -8,7 +8,7 @@ from .fileFormats.hdf5 import HDF5
 from .data import GalacticusData
 from .utils.progress import Progress
 
-def getSSPDataFiles(path=None,chunks=1024,extract=True,forceDownload=False):
+def getSSPDataFiles(path=None,chunks=1024,forceDownload=False):
     """
     getSSPDataFiles(): Function to download files containing Synthetic Stellar Population (SSP) models.
 
@@ -19,9 +19,6 @@ def getSSPDataFiles(path=None,chunks=1024,extract=True,forceDownload=False):
                              variables (stored as 'GALACTICUS_DATASETS').  [Default=None]
             chunks        -- If downloading the SSP files, specify the size of the chunks in which to
                              stream the download. [Default=1024]
-            extract       -- Extract the SSP files from the downloaded .tar.bz2 file. Note that 
-                             extract=True automatically if download is required (i.e. files are missing
-                             or forceDownload=True). [Default=True]
             forceDownload -- Re-download the SSP file and overwrite existing copy. [Default=False]
 
     """
@@ -36,7 +33,6 @@ def getSSPDataFiles(path=None,chunks=1024,extract=True,forceDownload=False):
     outfile = spsDir+url.split("/")[-1]    
     # Download file if necessary
     if not os.path.exists(outfile) or forceDownload:
-        extract = True
         print("Downloading SSP files...")
         # Open URL
         RESPONSE = requests.get(url, stream=True)    
@@ -55,10 +51,13 @@ def getSSPDataFiles(path=None,chunks=1024,extract=True,forceDownload=False):
         # Close file
         OUT.close()    
     # Extract files from tar file
-    if extract:
-        print("Extracting SSP files...")
-        TAR = tarfile.open(outfile)
-        TAR.extractall(path=spsDir)
+    print("Extracting SSP files...")
+    TAR = tarfile.open(outfile)
+    TAR.extractall(path=spsDir)
+    for ifile in glob.glob(spsDir+"/data/stellarPopulations/*.hdf5"):
+        name = ifile.split("/")[-1]
+        shutil.move(ifile,spsDir+name)
+    shutil.rmtree(spsDir+"/data")
     return
     
 
@@ -85,9 +84,10 @@ class SyntheticStellarPopulation(object):
         self.file = None
         self.information = None
         self.wavelengths = None
-        self.metallicites = None
+        self.metallicities = None
         self.ages = None
         self.spectra = None
+        self.imf = None
         return
 
     def wavelengthResolution(self,wavelength):        
@@ -129,11 +129,12 @@ class GalacticusSyntheticStellarPopulations(object):
     """
     def __init__(self,path=None,chunks=1024):
         DATA = GalacticusData(path=path)
-        self.path = DATA.dynamic+"stellarPopulations/data/stellarPopulations/"
+        self.path = DATA.dynamic+"stellarPopulations/"
         self.models = glob.glob(self.path+"*.hdf5")
         if len(self.models) == 0:
-            getSSPDataFiles(path=path,chunks=chunks,extract=True,forceDownload=False)        
+            getSSPDataFiles(path=path,chunks=chunks,forceDownload=False)        
             self.models = glob.glob(self.path+"*.hdf5")
+        self.models = [mod.split("/")[-1] for mod in self.models]
         return
 
     def load(self,fileName):        
@@ -150,21 +151,29 @@ class GalacticusSyntheticStellarPopulations(object):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        if not os.path.exists(fileName) or fileName not in self.models:
+        if not os.path.exists(fileName) or fileName.split("/")[-1] not in self.models:
             raise IOError(funcname+"(): File '"+fileName+"' not found.")        
         # Initialize SSP class
         SSP = SyntheticStellarPopulation()
         # Open file
         F = HDF5(fileName,'r')
         SSP.file = fileName
-        SSP.information = F.readAttributes("/source")
+        # Extract information if present
+        if "source" in F.lsGroups("/"):
+            SSP.information = F.readAttributes("/source")
         # Load spectra
         SSP.wavelengths = np.copy(np.array(F.fileObj["wavelengths"]))
         SSP.metallicities = np.copy(np.array(F.fileObj["metallicities"]))
         SSP.ages = np.copy(np.array(F.fileObj["ages"]))
         SSP.spectra = np.copy(np.array(F.fileObj["spectra"]))
+        # Load IMF if present
+        if "initialMassFunction" in F.lsGroups("/"):
+            n = len(np.array(F.fileObj["initialMassFunction/mass"]))
+            SSP.imf = np.zeros(n,dtype=[("mass",float),("imf",float)]).view(np.recarray)
+            SSP.imf.mass = np.copy(np.array(F.fileObj["initialMassFunction/mass"]))
+            SSP.imf.imf = np.copy(np.array(F.fileObj["initialMassFunction/initialMassFunction"]))
         F.close()
-        return
+        return SSP
 
     
 
