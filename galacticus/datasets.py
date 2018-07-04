@@ -1,13 +1,19 @@
 #! /usr/bin/env python
 
-class DatasetClass(object):
+class Dataset(object):
 
-    def __init__(self,name=None,data=None,redshift=None,output=None):
+    def __init__(self,name=None,data=None,path=None,unitsInSI=None):
         self.name = name
         self.data = data
-        self.redshift = redshift
-        self.output = output
+        self.path = path
+        self.unitsInSI = unitsInSI
         return
 
-    
+    def reset(self):
+        self.name = None
+        self.data = None
+        self.path = None
+        self.unitsInSI = None
+        return
+
     
