@@ -5,8 +5,6 @@ import numpy as np
 from ..datasets import Dataset
 from ..constants import luminosityAB
 from ..errors import ParseError
-from ..utils.progress import Progress
-
 
 def parseStellarLuminosity(datasetName):
     """
@@ -109,8 +107,10 @@ class GalacticusStellarLuminosity(object):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if datasetName in self.GH5Obj.availableDatasets(z):
+            return self.GH5Obj.getDataset(datasetName,z)
         MATCH = parseStellarLuminosity(datasetName)
-        if MATCH.group("component")=="total":
+        if MATCH.group("component")=="total":            
             diskName = datasetName.replace("total","disk")
             DISK = self.getStellarLuminosity(diskName,z)
             sphereName = datasetName.replace("total","spheroid")
@@ -191,6 +191,8 @@ class GalacticusBulgeToTotal(object):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if datasetName in self.GH5Obj.availableDatasets(z):
+            return self.GH5Obj.getDataset(datasetName,z)
         MATCH = parseBulgeToTotal(datasetName)
         LUM = GalacticusStellarLuminosity()
         bulgeName = datasetName.replace("bulgeToTotalLuminosities","spheroidLuminositiesStellar")

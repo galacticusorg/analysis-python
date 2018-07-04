@@ -85,6 +85,8 @@ class GalacticusStellarMass(object):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if datasetName in self.GH5Obj.availableDatasets(z):
+            return GH5Obj.getDataset(datasetName,z)
         MATCH = parseStellarMass(datasetName)
         if MATCH.group("component")=="total":            
             diskName = datasetName.replace("total","disk")
@@ -154,6 +156,8 @@ class GalacticusStarFormationRate(object):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if datasetName in self.GH5Obj.availableDatasets(z):
+            return GH5Obj.getDataset(datasetName,z)
         MATCH = parseStarFormationRate(datasetName)
         if MATCH.group("component")=="total":
             diskName = datasetName.replace("total","disk")
