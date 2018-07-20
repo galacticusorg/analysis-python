@@ -234,11 +234,49 @@ class HDF5(object):
                 raise KeyError(funcname+"(): Some required keys cannot be found in '"+hdfdir+"'!")
         return matches
 
+    
+    def datasetExists(self,hdfdir,name,exit_if_missing=True):
+        exists = name in self.lsDatasets(hdfdir)
+        if not exists and exit_if_missing:
+            raise KeyError(funcname+"(): dataset '"+name+"' not found in "+hdfdir+"!")
+        return exists
+
+    def readDataset(self,hdfPath,exit_if_missing=True):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        name = hdfPath.split("/")[-1]
+        hdfdir = hdfPath.replace(name,"")
+        if hdfdir not in self.fileObj:
+            raise KeyError(funcname+"(): "+hdfdir+" not found in HDF5 file!")        
+        data = None
+        if self.datasetExists(hdfdir,name,exit_if_missing=exit_if_missing):
+            data = np.array(self.fileObj[hdfPath])
+        return data
+
+    def storeDataset(self,data,hdfdir,name,exit_if_missing=True):
+        arr = self.readDataset(hdfdir+"/"+name,exit_if_missing=exit_if_missing)
+        assert(arr.shape==data[name].shape)
+        if arr is not None:
+            data[name] = arr
+        return
+
+    def buildDataType(self,hdfdir,names):
+        dtype = [(name,str(self.fileObj[hdfdir+"/"+name].dtype)) for name in names]
+        return dtype
+
+    def datasetSize(self,hdfPath,exit_if_missing=True):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        name = hdfPath.split("/")[-1]
+        hdfdir = hdfPath.replace(name,"")
+        size = 0
+        if self.datasetExists(hdfdir,name,exit_if_missing=exit_if_missing):
+            size = self.fileObj[hdfPath].size
+        return size
+            
     def readDatasets(self,hdfdir,recursive=False,required=None,exit_if_missing=True):
         """
-        read_dataset(): Read one or more HDF5 datasets.
+        readDatasets(): Read one or more HDF5 datasets.
 
-        USAGE:   data = HDF5().read_dataset(hdfdir,[recursive],[required],[exist_if_missing])
+        USAGE:   data = HDF5().readDatasets(hdfdir,[recursive],[required],[exist_if_missing])
         
         Inputs:
                hdfdir : Path to dataset or group of datasets to read.
@@ -250,17 +288,15 @@ class HDF5(object):
                                  are missing. (Default = True).
         
         Outputs:
-               data : Dictionary of datasets (stored as Numpy arrays).
+               data : Numpy array of datasets.
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        data = {}
-        if isinstance(self.fileObj[hdfdir],h5py.Dataset):
+        if hdfdir not in self.fileObj:
+            raise KeyError(funcname+"(): "+hdfdir+" not found in HDF5 file!")        
+        if isinstance(self.fileObj[hdfdir],h5py.Dataset):            
             # Read single dataset
-            if hdfdir not in self.fileObj:
-                raise KeyError(funcname+"(): "+hdfdir+" not found in HDF5 file!")        
-            name = hdfdir.split("/")[-1]
-            data[str(name)] = np.array(self.fileObj[hdfdir])
+            DATA = self.readDataset(hdfdir,exit_if_missing=exit_if_missing)
         elif isinstance(self.fileObj[hdfdir],h5py.Group):
             # Read datasets in group
             # i) List datasets (recursively if specified)
@@ -271,11 +307,14 @@ class HDF5(object):
             if required is not None:                
                 objs = self.findMatchingDatasets(hdfdir,required,recursive=recursive,\
                                                     exit_if_missing=exit_if_missing)
-            # ii) Store in dictionary
-            def _store_dataset(obj):
-                data[str(obj)] = np.array(self.fileObj[hdfdir+"/"+obj])
-            map(_store_dataset,objs)
-        return data
+            # ii) Get datatypes
+            dtype = self.buildDataType(hdfdir,objs)
+            # iii) Initialize array
+            n = self.datasetSize(hdfdir+"/"+objs[0])
+            DATA = np.zeros(n,dtype=dtype)
+            # ii) Store datasets in array
+            dummy = [self.storeDataset(DATA,hdfdir,obj) for obj in objs]
+        return DATA
                             
     
     ##############################################################################
