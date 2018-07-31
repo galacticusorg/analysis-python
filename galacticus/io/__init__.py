@@ -205,7 +205,7 @@ class GalacticusHDF5(HDF5):
         """
         DATA = Dataset()
         DATA.name = datasetName
-        DATA.path = "Outputs/"+self.getOutputName(z)+"nodeData/"
+        DATA.path = "Outputs/"+self.getOutputName(z)+"/nodeData/"
         if not self.datasetExists(datasetName,z):
             return DATA
         attr = self.readAttributes(DATA.path+DATA.name)
@@ -348,7 +348,7 @@ class GalacticusHDF5(HDF5):
                 z = z[0]
         if np.ndim(z) == 0:
             self.readGalaxiesAtRedshift(z,props=props,SIunits=SIunits,removeRedshiftString=removeRedshiftString)
-         else:
+        else:
             zout = np.unique([self.outputs.z[np.argmin(np.fabs(self.outputs.z-iz))] for iz in z])
             PROG = Progress(len(zout))
             dummy = [self.readGalaxiesAtRedshift(iz,props=props,SIunits=SIunits,removeRedshiftString=True,progressObj=PROG) for iz in zout]
