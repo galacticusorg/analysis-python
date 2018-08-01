@@ -17,14 +17,14 @@ class Galaxies(object):
         self.GH5Obj = GH5Obj
         return
 
-    def retrieveProperty(self,propertyName):
+    def retrieveProperty(self,propertyName,redshift):
         for property,propertyClass in self.Property.subclasses.items():
             print "Testing for match on "+property
             PC = propertyClass()
             if (PC.matches(propertyName)):
                 # We have a class that matches our property.                                                                                           
                 print "   Class "+property+" matches"
-                propertyValues = PC.compute(propertyName,self)
+                propertyValues = PC.compute(propertyName,redshift,self)
                 print propertyValues        
         return
 
@@ -33,7 +33,7 @@ class Galaxies(object):
         # Create numpy array to store galaxy properties
         # ...
         # Store galaxy properties and store in numpy array
-        dummy = [self.retrieveProperty(propertyName) for propertyName in properties]
+        dummy = [self.retrieveProperty(propertyName,z) for propertyName in properties]
         return
 
         
