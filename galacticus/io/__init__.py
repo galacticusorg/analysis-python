@@ -55,8 +55,12 @@ class GalacticusHDF5(HDF5):
      countGalaxiesAtRedshift(): Count galaxies at specified redshift output.
      datasetExists(): Checks whether specified dataset exists.
      getDataset(): Return Dataset class instance with data for specified dataaset.
+     getDataType(): Return datatype of specified dataset.
+     getMergerTreeWeight(): Return the list of weights to apply to each galaxy.
      getOutputName(): Return name of output nearest to specified redshift.
      getOutputRedshift(): Return redshift of specified output.
+     getRedshift(): Return a Dataset class instance containing either lightcone
+                    or snapshot redshift information.
      getRedshiftString(): Return string of redshift information used for datasets in
                           output nearest to specified redshift.
      nearestRedshift(): Return redshift of snapshot that is neartest to the specified
@@ -147,6 +151,7 @@ class GalacticusHDF5(HDF5):
         galaxies = np.array([self.countGalaxiesAtRedshift(redshift) for redshift in redshifts])
         return np.sum(galaxies)
 
+
     def countGalaxiesAtRedshift(self,z):
         """
         GalacticusHDF5.countGalaxiesAtRedshift(): Count number of galaxies stored in output that 
@@ -168,7 +173,7 @@ class GalacticusHDF5(HDF5):
         if "nodeData" in OUT.keys():            
             if len(self.availableDatasets(z)) > 0:
                 dataset = self.availableDatasets(z)[0]            
-                ngals = len(np.array(OUT["nodeData/"+dataset]))
+                ngals = OUT["nodeData/"+dataset].size
         return ngals
 
     def datasetExists(self,datasetName,z):
@@ -203,6 +208,7 @@ class GalacticusHDF5(HDF5):
                     data       -- Dataset class object (see datasets.Dataset).
                
         """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         DATA = Dataset()
         DATA.name = datasetName
         DATA.path = "Outputs/"+self.getOutputName(z)+"nodeData/"
@@ -215,7 +221,55 @@ class GalacticusHDF5(HDF5):
             DATA.unitsInSI = unitsInSI
         DATA.data = np.array(self.fileObj[DATA.path+DATA.name])
         return DATA
-        
+
+    def getDataType(self,datasetName,z):
+        """
+        GalacticusHDF5.getDataType(): Return the datatype of a dataset. If the dataset does not
+                                      exist, then returns 'None'.
+                                      
+        USAGE:  dtype = GalacticusHDF5.getDataType(datasetName,z)
+
+           INPUTS
+               datasetName -- Name of dataset to search for.
+               z           -- Redshift to query outputs.
+               
+           OUTPUTS
+               dtype       -- String containing datatype of dataset, or 'None' if dataset
+                              is not found.
+
+        """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if not self.datasetExists(datasetName,z): 
+            return None
+        output = self.getOutputName(z)
+        dset = self.fileObj["Outputs/"+output+"/nodeData/"+datasetName]
+        return str(dset.dtype)
+    
+
+    def getMergerTreeWeight(self,z):
+        """
+        GalacticusHDF5.getMergerTreeWeight(): Return the merger tree weighting to apply to
+                                              each galaxy. 
+
+        USAGE:  DATA = GalacticusHDF5.getMergerTreeWeight(z)
+
+           INPUT
+               z   -- Redshift to query outputs.
+
+           OUTPUT
+              DATA -- Dataset() class object containing weight in DATA.data.
+                                              
+        """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        out = self.selectOutput(z)
+        cts = np.array(out["mergerTreeCount"])
+        wgt = np.array(out["mergerTreeWeight"])        
+        DATA = Dataset()
+        DATA.name = "mergerTreeWeight"
+        DATA.path = "Outputs/"+self.getOutputName(z)+"nodeData/"
+        DATA.data = np.copy(np.repeat(wgt,cts))
+        return DATA
+
 
     def getOutputName(self,z):
         """
@@ -257,6 +311,34 @@ class GalacticusHDF5(HDF5):
         return self.outputs.z[i]
 
 
+    def getRedshift(self,z):
+        """
+        GalacticusHDF5.getRedshift(): Return a Dataset class object containing the redshift of 
+                                      the galaxies. These either correspond to the lightcone
+                                      redshift of the galaxy (if the dataset 'lightconeRedshift'
+                                      is present) or the redshift of the snapshot in which the 
+                                      galaxies are found.
+                                      
+        USAGE: DATA = GalacticusHDF5.getRedshift(z)  
+
+              INTPUT
+                  z    -- Redshift to query outputs.
+
+              OUTPUT
+                  DATA -- A Dataset() class object with redshifts stored in DATA.data.
+
+        """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if self.datasetExists("lightconeRedshift",z):
+            DATA = self.getDataset("lightconeRedshift",z)
+        else:
+            DATA = Dataset()
+            DATA.name = "snapshotRedshift"
+            DATA.path = "Outputs/"+self.getOutputName(z)+"nodeData/"
+            DATA.data = np.ones(self.countGalaxiesAtRedshift(z),dtype=float)*self.nearestRedshift(z)
+        return DATA
+
+
     def getRedshiftString(self,z):
         """
         GalacticusHDF5.getRedshiftString(): Return the redshift string that is used in the names 
@@ -277,41 +359,6 @@ class GalacticusHDF5(HDF5):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         return fnmatch.filter(fnmatch.filter(self.availableDatasets(z),"*z[0-9].[0-9]*")[0].split(":"),"z*")[0]
     
-    def getUUID(self):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        keys = list(map(str,self.fileObj["/"].attrs.keys()))
-        uuid = None
-        if "UUID" in keys:            
-            uuid = str(self.fileObj["/"].attrs["UUID"])
-        return uuid
-
-    def globalHistory(self,props=None,si=False):        
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        globalHistory = self.fileObj["globalHistory"]
-        allprops = globalHistory.keys() + ["historyRedshift"]
-        if props is None:
-            props = allprops 
-        else:
-            props = set(props).intersection(allprops)            
-        epochs = len(np.array(globalHistory["historyExpansion"]))
-        dtype = np.dtype([ (str(p),np.float) for p in props ])
-        history = np.zeros(epochs,dtype=dtype)
-        if self._verbose:
-            if si:
-                print("WARNING! "+funcname+"(): Adopting SI units!")
-            else:
-                print("WARNING! "+funcname+"(): NOT adopting SI units!")        
-        for p in history.dtype.names:
-            if p is "historyRedshift":
-                history[p] = np.copy((1.0/np.array(globalHistory["historyExpansion"]))-1.0)
-            else:
-                history[p] = np.copy(np.array(globalHistory[p]))
-                if si:
-                    if "unitsInSI" in globalHistory[p].attrs.keys():
-                        unit = globalHistory[p].attrs["unitsInSI"]
-                        history[p] = history[p]*unit
-        return history.view(np.recarray)
-
     def nearestRedshift(self,z):
         """
         GalacticusHDF5.nearestRedshift(): Return the redshift of the output that is closest 
@@ -335,45 +382,6 @@ class GalacticusHDF5(HDF5):
         return self.outputs.z[iselect]
 
         
-
-
-
-    def readGalaxies(self,z,props=None,SIunits=False,removeRedshiftString=False):                
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        # Create array to store galaxy data
-        self.galaxies = None
-        # Read galaxies from one or more outputs
-        if np.ndim(z) == 1:
-            if len(z) == 1:
-                z = z[0]
-        if np.ndim(z) == 0:
-            self.readGalaxiesAtRedshift(z,props=props,SIunits=SIunits,removeRedshiftString=removeRedshiftString)
-         else:
-            zout = np.unique([self.outputs.z[np.argmin(np.fabs(self.outputs.z-iz))] for iz in z])
-            PROG = Progress(len(zout))
-            dummy = [self.readGalaxiesAtRedshift(iz,props=props,SIunits=SIunits,removeRedshiftString=True,progressObj=PROG) for iz in zout]
-        return self.galaxies
-
-    
-    def readGalaxiesAtRedshift(self,z,props=None,SIunits=False,removeRedshiftString=False,progressObj=None):                
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        # Initiate class for snapshot output
-        OUTPUT = SnapshotOutput(z,self)
-        # Read galaxies from snapshot
-        OUTPUT.readGalaxies(props=props,SIunits=SIunits,removeRedshiftString=removeRedshiftString)
-        # Add to galaxies data array
-        if self.galaxies is None:
-            self.galaxies = np.copy(OUTPUT.galaxies)
-        else:
-            self.galaxies = np.append(self.galaxies,np.copy(OUTPUT.galaxies))
-        # Delete output class
-        del OUTPUT
-        # Report progress
-        if progressObj is not None:
-            progressObj.increment()
-            progressObj.print_status_line(task="Redshift = "+str(z))
-        return 
-    
     def selectOutput(self,z):
         """
         GalacticusHDF5.selectOutput(): Return an HDF5 group object for the output that is
@@ -399,6 +407,47 @@ class GalacticusHDF5(HDF5):
 
 
 
+
+
+
+
+
+    def readGalaxies(self,z,props=None,SIunits=False,removeRedshiftString=False):                
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        # Create array to store galaxy data
+        self.galaxies = None
+        # Read galaxies from one or more outputs
+        if np.ndim(z) == 1:
+            if len(z) == 1:
+                z = z[0]
+        if np.ndim(z) == 0:
+            self.readGalaxiesAtRedshift(z,props=props,SIunits=SIunits,removeRedshiftString=removeRedshiftString)
+        else:
+            zout = np.unique([self.outputs.z[np.argmin(np.fabs(self.outputs.z-iz))] for iz in z])
+            PROG = Progress(len(zout))
+            dummy = [self.readGalaxiesAtRedshift(iz,props=props,SIunits=SIunits,removeRedshiftString=True,progressObj=PROG) for iz in zout]
+        return self.galaxies
+
+    
+    def readGalaxiesAtRedshift(self,z,props=None,SIunits=False,removeRedshiftString=False,progressObj=None):                
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        # Initiate class for snapshot output
+        OUTPUT = SnapshotOutput(z,self)
+        # Read galaxies from snapshot
+        OUTPUT.readGalaxies(props=props,SIunits=SIunits,removeRedshiftString=removeRedshiftString)
+        # Add to galaxies data array
+        if self.galaxies is None:
+            self.galaxies = np.copy(OUTPUT.galaxies)
+        else:
+            self.galaxies = np.append(self.galaxies,np.copy(OUTPUT.galaxies))
+        # Delete output class
+        del OUTPUT
+        # Report progress
+        if progressObj is not None:
+            progressObj.increment()
+            progressObj.print_status_line(task="Redshift = "+str(z))
+        return 
+    
 
 
 

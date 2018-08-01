@@ -28,22 +28,33 @@ def readonlyWrapper(func):
     return wrapper
 
 class HDF5(object):
+    """ 
+    HDF5: Class for reading/writing HDF5 files.
     
+          USAGE: OBJ = HDF5(filename,ioStatus,verbose=<verbose>)
+    
+          INPUTS 
+             filename -- Path to HDF5 file.  
+             ioStatus -- Read ('r'), write ('w') or append ('a') to file.  
+              verbose -- Print extra information (default value = False).
+    
+          OUTPUTS
+                OBJ  -- HDF5 class object.
+
+    Attributes:
+         fileObj: The h5py.File object.
+         filename: String containing HDF5 file path.
+         read_only: Logical indicating whether file opened in read only mode.
+         
+
+    Functions:
+         
+
+
+    """    
     def __init__(self,*args,**kwargs):
-        """ HDF5 Class for reading/writing HDF5 files
-
-        USAGE: OBJ = HDF5(filename,ioStatus,verbose=<verbose>)
-
-        Inputs: filename -- Path to HDF5 file.  
-                ioStatus -- Read ('r'), write ('w') or append ('a') to file.  
-                verbose -- Print extra information (default value = False).
-
-        Returns HDF5 class object.
-        """
-
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-
         self.fileObj = h5py.File(*args)
         if "verbose" in kwargs.keys():
             self._verbose = kwargs["verbose"]
@@ -61,10 +72,30 @@ class HDF5(object):
         return
     
     def close(self):
+        """
+        HDF5.close(): Close the HDF5 file instance.
+
+        USAGE: HDF5.close()
+
+        """
         self.fileObj.close()
         return
 
     def lsObjects(self,hdfdir,recursive=False):
+        """
+        HDF5.lsObjects(): List all of the objects in the specified directory 
+                          inside the HDF5 file.
+                          
+        USAGE:  objs = HDF5.lsObjects(dir,[recursive=<recursive>])
+        
+             INPUTS
+                   dir       -- Path to HDF5 group.
+                   recursive -- Recursively search in sub-groups. [Default=False]
+                   
+            OUTPUTS
+                     objs    -- List of object names.
+                 
+        """
         ls = []
         thisdir = self.fileObj[hdfdir]
         if recursive:
