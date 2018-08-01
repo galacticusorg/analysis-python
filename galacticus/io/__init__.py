@@ -211,7 +211,7 @@ class GalacticusHDF5(HDF5):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         DATA = Dataset()
         DATA.name = datasetName
-        DATA.path = "Outputs/"+self.getOutputName(z)+"nodeData/"
+        DATA.path = "Outputs/"+self.getOutputName(z)+"/nodeData/"
         if not self.datasetExists(datasetName,z):
             return DATA
         attr = self.readAttributes(DATA.path+DATA.name)
