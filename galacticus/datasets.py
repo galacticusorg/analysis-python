@@ -2,18 +2,16 @@
 
 class Dataset(object):
 
-    def __init__(self,name=None,data=None,path=None,unitsInSI=None):
+    def __init__(self,name=None,data=None,attr={}):
         self.name = name
         self.data = data
-        self.path = path
-        self.unitsInSI = unitsInSI
+        self.attr = attr
         return
 
     def reset(self):
         self.name = None
         self.data = None
-        self.path = None
-        self.unitsInSI = None
+        self.attr = {}
         return
 
     

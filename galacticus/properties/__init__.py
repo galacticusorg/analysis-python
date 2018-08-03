@@ -1,4 +1,5 @@
 #! /usr/bin/env python
 
 from .manager import Property
-from ..inclination import PropertyInclination
+from ..io.read import ReadHDF5
+from ..inclination import Inclination

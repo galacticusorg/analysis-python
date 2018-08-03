@@ -1,20 +1,61 @@
 #! /usr/bin/env python
 
 import __future__
-import os
 import warnings
+import os,sys
+from configparser import ConfigParser
+import pkg_resources
 
-# Load path to Galacticus source code
-GALACTICUS_PATH = None
-datasetsKeyName = "GALACTICUS_ROOT"
-if datasetsKeyName in os.environ.keys():
-    GALACTICUS_PATH = os.environ[datasetsKeyName]
-    if not GALACTICUS_PATH.endswith("/"):
-        GALACTICUS_PATH = GALACTICUS_PATH + "/"
-else:
-    warningString = "WARNING! No path specified for Galacticus source code.\n"+\
-        "Specify the path in your environment variables using the variable name '"+\
-        datasetsKeyName+"'."
-    warnings.warn(warningString)
+class rcConfig(ConfigParser):
+    """
+    rcConfig: Class to load and manage a configuration file of rc keyword parameters
+              for calculations within the Galacticus python package.
+
+    Base class: configparser.ConfigParser
+    
+    Functions:
+            update(): Updates the specified parameter.
+
+    """
+    def __init__(self):
+        classname = self.__class__.__name__
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        super(rcConfig,self).__init__()
+        configKeyword = "GALACTICUS_PYTHON_CONFIG"
+        if configKeyword in os.environ.keys():
+            configFile = os.environ[configKeyword]
+            warnings.warn("WARNING: Loading non-standard rcPrams configuration."\
+                              " [Configuration file: "+configFile+"]")
+        else:
+            configFile = pkg_resources.resource_filename(__name__,"rcParams.cfg")
+        # Read selected configuration file
+        self.read(configFile)
+        # Store the path to the configuration file
+        self.file = configFile
+        return
+
+    def update(self,section,parameter,value):
+        """
+        rcConfig.update: Updates the parameter in the specified section of the configuration file
+                         by assigning the parameter the specified value.
+
+        USAGE: rcConfig.update(section,parameter,value)
+
+          INPUTS
+              section   -- The name of the section in the configuration file in which the parameter 
+                           can be found. 
+              parameter -- The name of the keyword parameter to update.
+              value     -- The value(s) to assign to the keyword parameter (accepts scalar or 
+                           vector input).
+
+        """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        self.set(section,parameter,str(value))
+        return
+
+rcParams = rcConfig()
+for path in ["GALACTICUS_EXEC_PATH","GALACTICUS_DATA_PATH"]:
+    if path in os.environ.keys():
+        rcParams.update("paths",path,os.environ[path])
 
     

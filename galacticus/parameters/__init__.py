@@ -2,7 +2,6 @@
 
 import os,sys,fnmatch
 import numpy as np
-import xml.etree.ElementTree as ET
 from ..fileFormats.xmlTree import xmlTree
 
 
@@ -15,134 +14,89 @@ class GalacticusParameters(xmlTree):
     
         Functions: 
                     getParameter(): Return value of specified parameter.
-                    getParent(): Return name of the parent XML element for specified parameter.
-                    constructDictionary(): Build dictionary of parameters.
+                    getParameterPath(): Return path to specified parameter in XML tree
                     setParameter(): Set the value for a specified parameter.
+                    removeParameter(): Remove specified parameter from the XML tree.
 
-    """
-    
-    def __init__(self,xmlfile,root='parameters',verbose=False):
+    """    
+    def __init__(self,file=None,root='parameters',verbose=False):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        super(GalacticusParameters,self).__init__(xmlfile=xmlfile,root=root,verbose=verbose)
+        super(GalacticusParameters,self).__init__(file=file,root=root)
         return
-    
-    def getParameter(self,param):
+
+    def getParameterPath(self,name):
         """
-        get_parameter: Return value of specified parameter.
+        GalacticusParameters.getParameterPath: Return the path to the parameter in the 
+                                               XML tree.
         
-        USAGE: value = GalacticusParameters().getParameter(param)
+        USAGE: value = GalacticusParameters.getParameter(path)
 
             INPUT
-                param -- name of parameter
+                 path -- Path to parameter, including parameter name
             OUTPUT
-                value -- string with value for parameter
+                value -- String with value for parameter
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        if not param in self.treeMap.keys():
-            if self._verbose:
-                print("WARNING! "+funcname+"(): Parameter '"+\
-                          param+"' cannot be located in "+self.xmlfile)
-            value = None
-        else:
-            path = self.treeMap[param]
-            elem = self.getElement(path)
-            if elem is not None:
-                value = elem.attrib.get("value")
-            else:
-                value = None
-        return value
-
-    def getParent(self,param):
+        matches = self.matchPath("/*"+name)
+        if len(matches) == 0:
+            raise ValueError(funcname+"(): Parameter '"+name+"' cannot be located!")
+        return matches[0]
+    
+    def getParameter(self,path):
         """
-        getParent: Return name of parent element.
-
-        USAGE: name = GalacticusParameters().getParent(param)
+        GalacticusParameters.getParameter: Return value of specified parameter.
+        
+        USAGE: value = GalacticusParameters.getParameter(path)
 
             INPUT
-                param -- name of parameter
+                 path -- Path to parameter, including parameter name
             OUTPUT
-                name -- string with name of parent
+                value -- String with value for parameter
 
         """
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if not param in self.treeMap.keys():
-            if self._verbose:
-                print("WARNING! "+funcname+"(): Parameter '"+\
-                          param+"' cannot be located in "+self.xmlfile)
-            name = None
-        else:
-            name = self.treeMap[param]
-            name = name.split("/")[-2]
-        return name
-
-    def constructDictionary(self):
-        """
-        constructDictionary(): Return parameter set as python dictionary.
-
-        USAGE: parameter_dict = GalacticusParameters().constructDictionary()
-
-            OUTPUT
-                parameter_dict -- dictionary containing parameter set
-
-        """
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        params = {}
-        for e in self.treeMap.keys():
-            params[e] = self.getParameter(e)
-        return params
-
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        value = self.getElementAttribute(path,attrib="value")
+        if value is None:            
+            print("WARNING! "+funcname+"(): Parameter at path '"+\
+                      path+"' cannot be located!")
+        return value
     
-    def setParameter(self,param,value,parent=None,selfCreate=False): 
+    def setParameter(self,path,value,createParents=False): 
         """
-        setParameter(): Update parameter value.
+        GalacticusParameters.setParameter(): Update parameter value.
 
-        USAGE: GalacticusParameters().setParameter(param,value,[parent=None],[selfCreate=False])
+        USAGE: GalacticusParameters.setParameter(param,value,[createParents=False])
         
            INPUT
-               param      -- Name of parameter.
-               value      -- Value to assign to parameter.
-               parent     -- Name of parent element. (Default=None, assumes parent is root.)
-               selfCreate -- Create sections of tree branch that are missing. (Default=False.)
+               path          -- Path to parameter, including parameter name
+               value         -- Value to assign to parameter.
+               createParents -- Create the parents in the parameter tree.
 
         """    
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
         # Convert paramter value to string
         if np.ndim(value) == 0:
             value = str(value)
         else:
             value = " ".join(map(str,value))
         # Set parameter
-        self.setElement(param,attrib={"value":value},parent=parent,\
-                            selfCreate=selfCreate)
+        self.updateElement(path,attrib={"value":value},createParents=createParents)
         return
 
     
-    def removeParameter(self,param):
+    def removeParameter(self,path):
         """
-        removeParameter(): Remove a parameter from a file.
+        GalacticusParameters.removeParameter(): Remove a parameter from a file.
         
-        USAGE:  GalacticusParameters().removeParameter(param)
+        USAGE:  GalacticusParameters.removeParameter(param)
 
             INPUT
-               param -- Name of parameter to remove.
+               path -- Path to parameter, including parameter name
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        self.removeElement(param)
+        self.removeElement(path)
         return
         
-
-def formatParametersFile(ifile,ofile=None):    
-    import shutil
-    tmpfile = ifile.replace(".xml","_copy.xml")
-    if ofile is not None:
-        cmd = "xmllint --format "+ifile+" > "+ofile
-    else:
-        cmd = "xmllint --format "+ifile+" > "+tmpfile
-    os.system(cmd)
-    if ofile is None:
-        shutil.move(tmpfile,ifile)        
-    return
-

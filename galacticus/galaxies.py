@@ -18,23 +18,22 @@ class Galaxies(object):
         return
 
     def retrieveProperty(self,propertyName,redshift):
+        propertyDataset = None
         for property,propertyClass in self.Property.subclasses.items():
-            print "Testing for match on "+property
-            PC = propertyClass()
-            if (PC.matches(propertyName)):
+            #print "Testing for match on "+property
+            PC = propertyClass(self)
+            if (PC.matches(propertyName,redshift=redshift)):
                 # We have a class that matches our property.                                                                                           
                 print "   Class "+property+" matches"
-                propertyValues = PC.compute(propertyName,redshift,self)
-                print propertyValues        
-        return
+                propertyDataset = PC.get(propertyName,redshift)
+        return propertyDataset
 
 
     def get(self,z,properties=None):
-        # Create numpy array to store galaxy properties
-        # ...
-        # Store galaxy properties and store in numpy array
-        dummy = [self.retrieveProperty(propertyName,z) for propertyName in properties]
-        return
+        # Store galaxy properties and store information in dictionary
+        GALAXIES = {propertyName:self.retrieveProperty(propertyName,z) \
+                        for propertyName in properties}
+        return GALAXIES
 
         
         
