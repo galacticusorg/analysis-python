@@ -33,7 +33,7 @@ class CloudyTable(HDF5):
         # Set verbosity
         self.verbose = verbose
         # Locate table file
-        DATA = GalacticusData(path=path,verbose=self.verbose)
+        DATA = GalacticusData(verbose=self.verbose)
         cloudyFile = DATA.search("emissionLines.hdf5")        
         # Initalise HDF5 class and open emissionLines.hdf5 file
         super(cloudyTable, self).__init__(cloudyFile,'r')

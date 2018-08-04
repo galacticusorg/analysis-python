@@ -4,71 +4,102 @@ import sys
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.integrate import romb
-import xml.etree.ElementTree as ET
+from .. import rcParams
+from ..fileFormats.xmlTree import xmlTree
 from ..data import GalacticusData
-from .io import loadFilterFromFile
 from . import Filter
 
-class VegaSpectrum(object):
-    """
-    VegaSpectrum: Class to read and store the spectrim for Vega.
+
+class Spectrum(object):
+
+    def __init__(self):        
+        self.description = None
+        self.origin = None
+        self.units = {}
+        self.spectrum = None
+        return
+
+    def reset(self):
+        self.description = None
+        self.origin = None
+        self.units = {}
+        self.spectrum = None
+        return
+        
+    def loadFromFile(self,spectrumFile):
+        TREE = xmlTree(file=spectrumFile)
+        if TREE.elementExists("/spectrum/description"):
+            self.description = TREE.getElement("/spectrum/description").text
+        if TREE.elementExists("/spectrum/origin"):
+            self.description = TREE.getElement("/spectrum/origin").text
+        for unit in TREE.tree.getroot().findall("units"):
+            if unit.text.starswith("wavelengths"):
+                self.units["wavelengths"] = unit.text
+            if unit.text.starswith("fluxes"):
+                self.units["flux"] = unit.text
+        DATA = TREE.tree.getroot().findall("datum")
+        dtype=[("wavelength",float),("flux",float)]
+        self.spectrum = np.zeros(len(DATA),dtype=dtype).view(np.recarray)
+        for i,datum in enumerate(DATA):
+            self.spectrum["wavelength"][i] = float(datum.text.split()[0])
+            self.spectrum["flux"][i] = float(datum.text.split()[1])
+        del TREE
+        return
     
-    USAGE: VEGA = VegaSpectrum([path=None],[fileName=A0V_Castelli.xml],[verbose=False])
+
+class Vega(Spectrum):
+    """
+    Vega: Class to read and store information for Vega.
+    
+    USAGE: VEGA = Vega([verbose=False])
 
          INPUT 
-               path -- Path to datasets repository. If None, will search for path in 
-                       environment variables (stored as 'GALACTICUS_DATASETS'). 
-                       [Default=None] 
-           fileName -- Name of Vega spectrum file. [Default=A0V_Castelli.xml]
             verbose -- Print additional information. [Default=False] 
 
 
          Functions:  
-              __call__ : Returns 'spectrum' class attribute, which is a numpy record array
-                         with records 'wavelength' and 'flux'.
-              computeFluxes: Compute the AB and Vega fluxes for a specified filter 
-                             transmission cuve.
+              __call__(): Returns AB-Vega offset for specified filter transmission.
+              computeFluxes(): Compute the AB and Vega fluxes for a specified 
+                               filter transmission cuve.
 
     """
-    def __init__(self,path=None,fileName="A0V_Castelli.xml",verbose=False):
+    def __init__(self,verbose=False):
         classname = self.__class__.__name__
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        super(VegaSpectrum,self).__init__()
         self.verbose = verbose
         # Identify spectrum file
-        DATA = GalacticusData(path=path,verbose=self.verbose)
-        if not fileName.endswith(".xml"):
-            fileName = fileName + ".xml"
-        spectrumFile = DATA.search(fileName)
-        # Open file
-        xmlStruct = ET.parse(spectrumFile)
-        xmlRoot = xmlStruct.getroot()
-        xmlMap = {c.tag:p for p in xmlRoot.iter() for c in p}
-        data = xmlRoot.findall("datum")
+        spectrumFile = rcParams.get("filters","vegaSpectrumFile",fallback=None)
+        if spectrumFile is None:
+            DATA = GalacticusData(verbose=self.verbose)
+            spectrumFile = DATA.search("A0V_Castelli.xml")
+            rcParams.set("filters","vegaSpectrumFile",spectrumFile)
         # Load spectrum
-        self.spectrum = np.zeros(len(data),dtype=[("wavelength",float),("flux",float)])
-        for i,datum in enumerate(data):
-            self.spectrum["wavelength"][i] = float(datum.text.split()[0])
-            self.spectrum["flux"][i] = float(datum.text.split()[1])
-        self.spectrum = self.spectrum.view(np.recarray)
-        isort = np.argsort(self.spectrum["wavelength"])
-        self.spectrum["wavelength"] = self.spectrum["wavelength"][isort]
-        self.spectrum["flux"] = self.spectrum["flux"][isort]
-        # Load additional information
-        self.description = xmlRoot.find("description").text
-        self.origin = xmlRoot.find("origin").text
+        self.loadFromFile(spectrumFile)
+        # Load V-band filter
+        filterFile = rcParams.get("filters","vBandFilterFile",fallback=None)
+        if filterFile is None:
+            DATA = GalacticusData(verbose=self.verbose)
+            filterFile = DATA.search("*/Buser_V.xml")
+            rcParams.set("filters","vBandFilterFile",filterFile)        
+        self.VBAND = Filter()
+        self.VBAND.loadFromFile(filterFile)
+        self.vFluxAB = None
+        self.vFluxVega = None
         return
 
-    def computeFluxes(self,filterWavelength,filterTransmission,kRomberg=8,**kwargs):
+    def __call__(self,wavelength,transmission):
+        return self.abVegaOffset(wavelength,transmission)
+
+    def computeFluxes(self,filterWavelength,filterTransmission)
         """
         computeFluxes: Compute the AB and Vega fluxes for specified tranmission curve.
         
-        USAGE: fluxAB,fluxVega = VegaSpectrum().computeFluxes(wavelength,transmission,[kRomberg=8],**kwargs)
+        USAGE: fluxAB,fluxVega = Vega().computeFluxes(wavelength,transmission)
         
             INPUT
                  wavelength   -- Wavelengths for filter transmission curve.
                  transmission -- Transmission for filter transmission curve.
-                 kRomberg     -- Number of k-nodes for Romberg integration. [Default=8]
-                 **kwrgs      -- Keywords arguments to pass to scipy.interpolate.interp1d.
 
             OUTPUT
                  fluxAB   -- AB flux for this filter transmission.
@@ -76,10 +107,11 @@ class VegaSpectrum(object):
 
         """
         # Interpolate spectrum and transmission data
-        TRANSMISSION = interp1d(filterWavelength,filterTransmission,**kwargs)
+        TRANSMISSION = interp1d(filterWavelength,filterTransmission)
+        kRomberg = 8
         wavelength = np.linspace(filterWavelength.min(),filterWavelength.max(),2**kRomberg+1)
         deltaWavelength = wavelength[1] - wavelength[0]
-        FLUX = interp1d(self.spectrum.wavelength,self.spectrum.flux,**kwargs)
+        FLUX = interp1d(self.spectrum.wavelength,self.spectrum.flux)
         # Get AB spectrum
         spectrumAB = 1.0/wavelength**2
         # Get the filtered spectrum
@@ -89,74 +121,29 @@ class VegaSpectrum(object):
         fluxVega = romb(filteredSpectrum,dx=deltaWavelength)
         fluxAB = romb(filteredSpectrumAB,dx=deltaWavelength)
         return fluxAB,fluxVega
-            
-    def __call__(self):
-        return self.spectrum
 
-    
 
-class VegaOffset(Filter):
-    """
-    VegaOffset: Class to compute AB-Vega offsets.
-
-    USAGE = VEGA = VegaOffset([path=None],[filterName=Buser_V],[spectrumFile=A0V_Castelli.xml],[verbose=False])
-    
-          INPUT
-                path -- Path to datasets repository. If None, will search for path in 
-                        environment variables (stored as 'GALACTICUS_DATASETS'). 
-                        [Default=None] 
-          filterName -- Name of V-band filter. This name is used to construct the filter
-                        file that will be loaded. [Default=Buser_V]
-        spectrumFile -- Name of Vega spectrum file. [Default=A0V_Castelli.xml]
-             verbose -- Print additional information. [Default=False] 
-
-        Functions:
-                 __call__(): Computes AB-Vega offset using computeOffset().
-                 computeOffset(): Compute AB-Vega offset for specified filter 
-                                  transmission curve.
-
-    """    
-    def __init__(self,path=None,filterName="Buser_V",spectrumFile="A0V_Castelli.xml",verbose=False):        
-        classname = self.__class__.__name__
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        super(self.__class__,self).__init__()
-        self.verbose = verbose
-        DATA = GalacticusData(path=path,verbose=self.verbose)
-        filterFile = DATA.search(filterName+".xml")
-        self.VBAND = loadFilterFromFile(filterFile)
-        self.fluxVega = None
-        self.fluxAB = None
-        self.VegaSpectrum = VegaSpectrum(path=path,fileName=spectrumFile,verbose=self.verbose)
-        return
-
-    def __call__(self,wavelength,transmission,kRomberg=8,**kwargs):
-        return self.computeOffset(wavelength,transmission,kRomberg=kRomberg,**kwargs)
-        
-    def computeOffset(self,wavelength,transmission,kRomberg=8,**kwargs):
+    def abVegaOffset(self,wavelength,transmission):
         """
-        computeOffset(): Compute AB-Vega offset for specified filter transmission curve.
+        abVegaOffset(): Compute AB-Vega offset for specified filter transmission curve.
 
-        USAGE: offset = VegaOffset().computeOffset(wavelength,transmission,[kRomberg=8],[**kwargs])
+        USAGE: offset = Vega().abVegaOffset(wavelength,transmission)
         
               INPUT
                  wavelength   -- Wavelengths for filter transmission curve.
                  transmission -- Transmission for filter transmission curve.
-                 kRomberg     -- Number of k-nodes for Romberg integration. [Default=8]
-                 **kwrgs      -- Keywords arguments to pass to scipy.interpolate.interp1d.
         
               OUTPUT
                  offset       -- AB-Vega offset for filter transmission curve.
 
         """
-        # Compute fluxes for V-band if not already computed      
-        if self.fluxAB is None or self.fluxVega is None:
-            self.fluxAB,self.fluxVega = self.VegaSpectrum.computeFluxes(self.VBAND.transmission.wavelength,
-                                                                        self.VBAND.transmission.transmission,\
-                                                                            kRomberg=kRomberg,**kwargs)
+        if self.vFluxAB is None or self.vFluxVega is None:
+            self.vFluxAB,self.vFluxVega = self.computeFluxes(self.VBAND.transmission.wavelength,
+                                                             self.VBAND.transmission.transmission)
         # Compute fluxes for specified filter
-        fluxAB,fluxVega = self.VegaSpectrum.computeFluxes(wavelength,transmission,\
-                                                              kRomberg=kRomberg,**kwargs)
+        fluxAB,fluxVega = self.computeFluxes(wavelength,transmission)
         # Return Vega offset
-        offset = 2.5*np.log10(fluxVega*self.fluxAB/self.fluxVega/fluxAB)
-        return offset
+        offset = 2.5*np.log10(fluxVega*self.vFluxAB/self.vFluxVega/fluxAB)
+        return offset            
+
 

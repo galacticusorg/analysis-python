@@ -2,21 +2,20 @@
 
 import os,fnmatch
 import warnings
-
+from . import rcParams
 
 def locateDatasetsRepository():
     # Load path to Galacticus datasets
     DATASETS_PATH = None
-    datasetsKeyName = "GALACTICUS_DATASETS"
-    if datasetsKeyName in os.environ.keys():
-        DATASETS_PATH = os.environ[datasetsKeyName]
-        if not DATASETS_PATH.endswith("/"):
-            DATASETS_PATH = DATASETS_PATH + "/"
-    else:
+    key = "GALACTICUS_DATA_PATH"
+    DATASETS_PATH = rcParams.get("paths",key,fallback=None)
+    if DATASETS_PATH is None:
         msg = "No path specified for Galacticus datasets. "+\
             "Specify the path in your environment variables "+\
             "using the variable name '"+datasetsKeyName+"'."
         raise RuntimeError(msg)
+    if not DATASETS_PATH.endswith("/"):
+        DATASETS_PATH = DATASETS_PATH + "/"
     return DATASETS_PATH
 
 
@@ -30,12 +29,9 @@ def recursiveGlob(treeroot,pattern):
 
 class GalacticusData(object):
 
-    def __init__(self,path=None,verbose=True):
+    def __init__(self,verbose=True):
         self.verbose = verbose
-        if path is None:
-            self.path = locateDatasetsRepository()
-        else:
-            self.path = path        
+        self.path = locateDatasetsRepository()
         # Check that the path exists
         if not os.path.exists(self.path):
             msg = "Datasets path '"+self.path+"' does not exist."
