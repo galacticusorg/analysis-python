@@ -91,7 +91,7 @@ class Vega(Spectrum):
     def __call__(self,wavelength,transmission):
         return self.abVegaOffset(wavelength,transmission)
 
-    def computeFluxes(self,filterWavelength,filterTransmission)
+    def computeFluxes(self,filterWavelength,filterTransmission):
         """
         computeFluxes: Compute the AB and Vega fluxes for specified tranmission curve.
         

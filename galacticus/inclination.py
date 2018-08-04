@@ -33,16 +33,12 @@ class Inclination(Property):
 
     Functions:
             matches(): Indicates whether specified dataset can be processed by this class.
-            compute(): Computes galaxy inclinations at specified redshift.
-
-    Attributes:
-           datatype: float
+            get(): Computes galaxy inclinations at specified redshift.
 
     """    
     def __init__(self,galaxies):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        self.datatype = float
         self.galaxies = galaxies
         return
 
@@ -68,15 +64,14 @@ class Inclination(Property):
 
     def get(self,propertyName,redshift):        
         """
-        Inclination.compute(): Compute galaxy inclinations for specified redshift.
+        Inclination.get(): Compute galaxy inclinations for specified redshift.
         
-        USAGE:  DATA = Inclination.compute(propertyName,redshift,galaxies)
+        USAGE:  DATA = Inclination.get(propertyName,redshift)
                 
-           INTPUTS
+           INPUTS
            
                 propertyName -- Name of property to compute. This should be set to 'inclination'.
                 redshift     -- Redshift value to query Galacticus HDF5 outputs.
-                galaxies     -- Instance of galacticus.galaxies.Galaxies() class.
            
            OUTPUT
                 DATA         -- Instance of galacticus.datasets.Dataset() class containing 
@@ -85,7 +80,7 @@ class Inclination(Property):
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if not self.matches(propertyName):
-            raise RunimeError(funcname+"(): Specified propert '"+propertyName+"' is not an inclination.")
+            raise RunimeError(funcname+"(): Specified property '"+propertyName+"' is not an inclination.")
         degrees = rcParams.getboolean("inclination","degrees")
         N = self.galaxies.GH5Obj.countGalaxies(redshift)
         inclination = Generate_Random_Inclinations(N,degrees=degrees)
