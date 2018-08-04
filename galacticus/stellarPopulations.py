@@ -8,7 +8,7 @@ from ..fileFormats.hdf5 import HDF5
 from ..data import GalacticusData
 from ..utils.progress import Progress
 
-def getSSPDataFiles(path=None,chunks=1024,forceDownload=False):
+def getSSPDataFiles(chunks=1024,forceDownload=False):
     """
     getSSPDataFiles(): Function to download files containing Synthetic Stellar Population (SSP) models.
 
@@ -23,7 +23,7 @@ def getSSPDataFiles(path=None,chunks=1024,forceDownload=False):
 
     """
     # Set location of Galacticus dataset repository
-    DATA = GalacticusData(path=path)
+    DATA = GalacticusData()
     spsDir = DATA.dynamic+"stellarPopulations/"
     if not os.path.exists(spsDir):
         os.makedirs(spsDir)
@@ -60,7 +60,6 @@ def getSSPDataFiles(path=None,chunks=1024,forceDownload=False):
     shutil.rmtree(spsDir+"/data")
     return
     
-
 
 class SyntheticStellarPopulation(object):
     """
@@ -127,8 +126,8 @@ class GalacticusSyntheticStellarPopulations(object):
                        stream the download. [Default=1024]
 
     """
-    def __init__(self,path=None,chunks=1024):
-        DATA = GalacticusData(path=path)
+    def __init__(self,chunks=1024):
+        DATA = GalacticusData()
         self.path = DATA.dynamic+"stellarPopulations/"
         self.models = glob.glob(self.path+"*.hdf5")
         if len(self.models) == 0:

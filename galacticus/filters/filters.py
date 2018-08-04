@@ -7,7 +7,7 @@ from .vega import Vega
 from ..data import GalacticusData
 
 
-class GalacticusFilter(Filter):    
+class GalacticusFilter(object):    
     """
     GalacticusFilter: Class to manage reading and writing of filter transmissions used 
                       with Galacticus.
@@ -16,32 +16,14 @@ class GalacticusFilter(Filter):
                                         [spectrumFile=A0V_Castelli.xml],[verbose=False])
 
         INTPUT 
-                    path     -- Path to datasets repository. If None, will search for path in 
-                                environment variables (stored as 'GALACTICUS_DATASETS'). 
-                                [Default=None] 
-             vbandFilterName -- Name of file containing V-band transmission curve. It is 
-                                assumed that this file is either in the dynamic or static
-                                subdirectories of the datasets repository. If not file name
-                                is specified the class will assume that the transmission
-                                is the V-band filter 'Buser_V'. [Default=Buser_V]
-                spectrumFile -- Name of file containing Vega spectral information. It is 
-                                assumed that this file is either in the dynamic or static 
-                                subdirectories of the datasets repository. If not file name is
-                                specified the class will assume that the spectrum is stored
-                                in a file named 'A0V_Castelli.xml'. [Default=A0V_Castelli.xml]
-                verbose      -- Increase verbosity. [Default=False]
-
-
-          OUTPUT
-                  GalFilter  -- Class object instance.
-
+           verbose -- Increase verbosity. [Default=False]
 
     Note: Upon initialization the class will create an instance of the VegaSpectrum and 
     VegaOffset classes. These are necessary for computing AB/Vega filter offsets.
 
     Functions:
 
-             clearMemory:  Clear all isntances of filters stored in memory.
+             clearCache:  Clear all isntances of filters stored in memory.
              create: Create an instance of the Filter class with specified information.
              write: Write Filter class instance to an XML file.
              load: Load a filter from an XML file.
@@ -67,7 +49,6 @@ class GalacticusFilter(Filter):
         self.cache = {}
         return
         
-
     def write(self,FILTER):
         """
         GalacticusFilter.write: Write a filter to an XML file.
@@ -111,7 +92,7 @@ class GalacticusFilter(Filter):
             filterFile = self.DATA.search(filterName+".xml")
             FILTER = Filter()
             FILTER.loadFromFile(filterFile)
-            FILTER.vegaOffset = self.VEGA.computeOffset(FILTER.transmission.wavelength,\
-                                                            FILTER.transmission.transmission)
+            FILTER.vegaOffset = self.VEGA.abVegaOffset(FILTER.transmission.wavelength,\
+                                                           FILTER.transmission.transmission)
             self.cache[filterName] = FILTER
         return FILTER
