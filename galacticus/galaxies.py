@@ -32,6 +32,7 @@ class Galaxies(object):
                 # We have a class that matches our property.                                                                                           
                 #print "   Class "+property+" matches"
                 propertyDataset = PC.get(propertyName,redshift)
+                break
         if propertyDataset is None:
             warnings.warn("\n"+funcname+"(): '"+propertyName+"' returned None instance!")
         return propertyDataset

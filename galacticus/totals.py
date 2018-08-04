@@ -25,7 +25,7 @@ class Totals(Property):
     def matches(self,propertyName,redshift=None):
         """
         Totals.matches(): Returns boolean to indicate whether this class can 
-                          process the specified preperty.
+                          process the specified property.
 
         USAGE: match =  Totals.matches(propertyName,[redshift=None])                                                                                                       
         
@@ -59,7 +59,7 @@ class Totals(Property):
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if not self.matches(propertyName):
-            raise RunimeError(funcname+"(): Cannot process property '"+propertyName+"'.")
+            raise RuntimeError(funcname+"(): Cannot process property '"+propertyName+"'.")
         # Get disk and spheroid properties
         components = [propertyName.replace("total","disk"),propertyName.replace("total","spheroid")]
         GALS = self.galaxies.get(redshift,properties=components)
@@ -92,7 +92,7 @@ class BulgeToTotal(Property):
     def matches(self,propertyName,redshift=None):
         """
         BulgeToTotal.matches(): Returns boolean to indicate whether this class can 
-                                process the specified preperty.
+                                process the specified property.
 
         USAGE: match =  BulgeToTotal.matches(propertyName,[redshift=None])
 
@@ -126,7 +126,7 @@ class BulgeToTotal(Property):
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if not self.matches(propertyName):
-            raise RunimeError(funcname+"(): Cannot process property '"+propertyName+"'.")
+            raise RuntimeError(funcname+"(): Cannot process property '"+propertyName+"'.")
         # Get spheroid and total properties
         spheroid = propertyName.replace("bulgeToTotal","spheroid")
         total = propertyName.replace("bulgeToTotal","total")

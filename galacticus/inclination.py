@@ -45,7 +45,7 @@ class Inclination(Property):
     def matches(self,propertyName,redshift=None):
         """
         Inclination.matches(): Returns boolean to indicate whether this class can process
-                               the specified preperty.
+                               the specified property.
 
         USAGE: match =  Inclination.matches(propertyName,[redshift=None])
 
@@ -80,7 +80,8 @@ class Inclination(Property):
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if not self.matches(propertyName):
-            raise RunimeError(funcname+"(): Specified property '"+propertyName+"' is not an inclination.")
+            msg = funcname+"(): Specified property '"+propertyName+"' is not an inclination."
+            raise RuntimeError(msg)
         degrees = rcParams.getboolean("inclination","degrees")
         N = self.galaxies.GH5Obj.countGalaxies(redshift)
         inclination = Generate_Random_Inclinations(N,degrees=degrees)
