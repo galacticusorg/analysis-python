@@ -159,3 +159,57 @@ class xmlTree(object):
         return
 
         
+
+def xmlTreeUnitTest():
+    print("UNIT TEST: xmlTree")
+    print("Creating xmlTree instance")
+    TREE = xmlTree(root="root")
+    print("Creating element 'elem1' with text 'hello world' and attribute value=1")
+    TREE.createElement("/root","elem1",attrib={"value":1},text="hello world",createParents=True)    
+    print("Checking 'elem1' created")    
+    print("    'elem1' exists = "+str(TREE.elementExists("/root/elem1")))
+    print(" View path to element in tree hierarchy:")
+    print("    path = "+str(TREE.matchPath("/root/elem1")[0]))
+    print("Retrieve element 'elem1':")
+    ELEM = TREE.getElement("/root/elem1")
+    print("    elem1.text = "+ELEM.text)
+    print("    elem1[value] = "+str(ELEM.attrib["value"]))
+    print("Removing element 'elem1':")
+    TREE.removeElement("/root/elem1")
+    print("    'elem1' exists = "+str(TREE.elementExists("/root/elem1")))
+    print("Creating element 'elem2' with path /root/elem1/elem2 and text 'goodbye world'")
+    TREE.createElement("/root/elem1","elem2",text="goodbye world",createParents=True)
+    print("Checking 'elem2' created")    
+    print("    'elem2' exists = "+str(TREE.elementExists("/root/elem1/elem2")))
+    print(" View path to element in tree hierarchy:")
+    print("    path = "+str(TREE.matchPath("/root/elem1/elem2")[0]))
+    print("    elements in 'elem1' = "+str(TREE.lsElements(TREE.getElement("/root/elem1"))))
+    print("Retrieve element 'elem2':")
+    ELEM = TREE.getElement("/root/elem1/elem2")
+    print("    elem2.text = "+ELEM.text)
+    print("Writing xml tree to temporary file")
+    tmpfile = "unitTest.xml"
+    TREE.writeToFile(tmpfile)
+    del TREE
+    print("Reading xml tree from temporary file")
+    TREE2 = xmlTree(file=tmpfile)
+    print("Map tree hierarchy:")
+    TREE2.mapTree()
+    print("     hierarchy structure = "+", ".join(TREE2.map))
+    print("Retrieve element 'elem2':")
+    ELEM = TREE2.getElement("/root/elem1/elem2")
+    print("    elem2.text = "+ELEM.text)
+    print("Update 'elem2' text to 'time to say goodbye'")
+    TREE2.updateElement("/root/elem1/elem2",text="time to say goodbye")
+    print("Retrieve element 'elem2':")
+    ELEM = TREE2.getElement("/root/elem1/elem2")
+    print("    elem2.text = "+ELEM.text)    
+    print("Checks complete. Cleaning up.")
+    os.remove(tmpfile)
+    print("TEST COMPLETE")
+    return
+
+
+
+
+
