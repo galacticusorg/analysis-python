@@ -12,6 +12,9 @@ class Galaxies(object):
         self.GH5Obj = GH5Obj
         self.verbose = verbose
         self.Property = Property()
+        self.properties = {}
+        for property,propertyClass in self.Property.subclasses.items():
+            self.properties[property] = propertyClass(self)
         return
 
     def updateGH5Obj(self,GH5Obj):
@@ -25,13 +28,12 @@ class Galaxies(object):
     def retrieveProperty(self,propertyName,redshift):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         propertyDataset = None
-        for property,propertyClass in self.Property.subclasses.items():
+        for property,propertyClass in self.properties.items():
             #print "Testing for match on "+property
-            PC = propertyClass(self)
-            if (PC.matches(propertyName,redshift=redshift)):
+            if (propertyClass.matches(propertyName,redshift=redshift)):
                 # We have a class that matches our property.                                                                                           
                 #print "   Class "+property+" matches"
-                propertyDataset = PC.get(propertyName,redshift)
+                propertyDataset = propertyClass.get(propertyName,redshift)
                 break
         if propertyDataset is None:
             warnings.warn("\n"+funcname+"(): '"+propertyName+"' returned None instance!")
