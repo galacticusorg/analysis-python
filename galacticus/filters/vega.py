@@ -33,14 +33,15 @@ class Spectrum(object):
         if TREE.elementExists("/spectrum/origin"):
             self.description = TREE.getElement("/spectrum/origin").text
         for unit in TREE.tree.getroot().findall("units"):
-            if unit.text.starswith("wavelengths"):
+            if unit.text.startswith("wavelengths"):
                 self.units["wavelengths"] = unit.text
-            if unit.text.starswith("fluxes"):
+            if unit.text.startswith("fluxes"):
                 self.units["flux"] = unit.text
         DATA = TREE.tree.getroot().findall("datum")
         dtype=[("wavelength",float),("flux",float)]
         self.spectrum = np.zeros(len(DATA),dtype=dtype).view(np.recarray)
         for i,datum in enumerate(DATA):
+            print datum.text
             self.spectrum["wavelength"][i] = float(datum.text.split()[0])
             self.spectrum["flux"][i] = float(datum.text.split()[1])
         del TREE
@@ -66,11 +67,11 @@ class Vega(Spectrum):
     def __init__(self,verbose=False):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        super(VegaSpectrum,self).__init__()
+        super(Vega,self).__init__()
         self.verbose = verbose
         # Identify spectrum file
         spectrumFile = rcParams.get("filters","vegaSpectrumFile",fallback=None)
-        if spectrumFile is None:
+        if spectrumFile.strip() == "None":
             DATA = GalacticusData(verbose=self.verbose)
             spectrumFile = DATA.search("A0V_Castelli.xml")
             rcParams.set("filters","vegaSpectrumFile",spectrumFile)
@@ -78,9 +79,9 @@ class Vega(Spectrum):
         self.loadFromFile(spectrumFile)
         # Load V-band filter
         filterFile = rcParams.get("filters","vBandFilterFile",fallback=None)
-        if filterFile is None:
+        if filterFile.strip() == "None":
             DATA = GalacticusData(verbose=self.verbose)
-            filterFile = DATA.search("*/Buser_V.xml")
+            filterFile = DATA.search("Buser_V.xml")
             rcParams.set("filters","vBandFilterFile",filterFile)        
         self.VBAND = Filter()
         self.VBAND.loadFromFile(filterFile)

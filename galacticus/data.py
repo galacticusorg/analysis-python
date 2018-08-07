@@ -9,7 +9,7 @@ def locateDatasetsRepository():
     DATASETS_PATH = None
     key = "GALACTICUS_DATA_PATH"
     DATASETS_PATH = rcParams.get("paths",key,fallback=None)
-    if DATASETS_PATH is None:
+    if DATASETS_PATH == "None":
         msg = "No path specified for Galacticus datasets. "+\
             "Specify the path in your environment variables "+\
             "using the variable name '"+datasetsKeyName+"'."

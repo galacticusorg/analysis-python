@@ -18,8 +18,8 @@ class GalacticusFilter(object):
         INTPUT 
            verbose -- Increase verbosity. [Default=False]
 
-    Note: Upon initialization the class will create an instance of the VegaSpectrum and 
-    VegaOffset classes. These are necessary for computing AB/Vega filter offsets.
+    Note: Upon initialization the class will create an instance of the Vega class. 
+          This are necessary for computing AB/Vega filter offsets.
 
     Functions:
 
