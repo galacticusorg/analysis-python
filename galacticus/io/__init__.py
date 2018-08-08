@@ -5,6 +5,7 @@ import numpy as np
 from ..fileFormats.hdf5 import HDF5
 from ..utils.progress import Progress
 from ..datasets import Dataset
+from .. import rcParams
 
 
 
@@ -369,48 +370,43 @@ class GalacticusHDF5(HDF5):
         return self.fileObj["Outputs/"+outstr]
 
 
+    def writeDataset(self,z,DATA,append=False,overwrite=False,chunks=True):
+        """
+        GalacticusHDF5.writeDataset(): Write the contents of a Dataset() class instance to the 
+                                       Galacticus HDF5 file in the specified redshift output. Any
+                                       attributes attached to the Dataset() are also written as
+                                       attributes of the HDF5 dataset object.
 
+        USAGE: GalacticusHDF5.writeDataset(z,DATA,[append=False],[overwrite=False],[chunks=True])
+             
+               INPUTS
+                   z         -- Redshift value to identify output in HDF5 file.
+                   DATA      -- Dataset() class instance containing dataset information.
+                   append    -- Append contents of Dataset() instance to HDF5 dataset if the
+                                dataset already exists (Default=False)
+                   overwrite -- Overwrite HDF5 dataset if already exists (Default=False)
+                   chunks    -- Write in chunks. Set to chunk shape or True for auto-chunking.
+                                (Default=True). Otherwise set chunks to None. 
+                                See: http://docs.h5py.org/en/stable/high/dataset.html#chunked-storage
+                                
+        Note that compression options for writing to the file are read from the rcParams configuration
+        file. By default the compression is 'gzip' with a compression level of 6.
 
-
-
-
-
-    def readGalaxies(self,z,props=None,SIunits=False,removeRedshiftString=False):                
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        # Create array to store galaxy data
-        self.galaxies = None
-        # Read galaxies from one or more outputs
-        if np.ndim(z) == 1:
-            if len(z) == 1:
-                z = z[0]
-        if np.ndim(z) == 0:
-            self.readGalaxiesAtRedshift(z,props=props,SIunits=SIunits,removeRedshiftString=removeRedshiftString)
-        else:
-            zout = np.unique([self.outputs.z[np.argmin(np.fabs(self.outputs.z-iz))] for iz in z])
-            PROG = Progress(len(zout))
-            dummy = [self.readGalaxiesAtRedshift(iz,props=props,SIunits=SIunits,removeRedshiftString=True,progressObj=PROG) for iz in zout]
-        return self.galaxies
+        # Get compression parameters from configuration file
+        compression =  rcParams.get("writeToHDF5","compression",fallback="gzip")
+        compression_opts = rcParams.getint("writeToHDF5","compression_opts",fallback=6)
+        # Get the path to the group containing the dataset
+        hdfdir = "/Outputs/"+self.getOutputName(z)+"/nodeData"
+        # Write the dataset to the file
+        self.addDataset(hdfdir,DATA.name,DATA.data,append=append,overwrite=overwrite,\
+                        maxshape=DATA.data.shape,chunks=chunks,compression=compression,\
+                        compression_opts=compression_opts)
+        if len(DATA.attr.keys()) > 0:
+            self.addAttributes(hdfdir+"/"+DATA.name,DATA.attr,overwrite=overwrite)
+        return
 
-    
-    def readGalaxiesAtRedshift(self,z,props=None,SIunits=False,removeRedshiftString=False,progressObj=None):                
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        # Initiate class for snapshot output
-        OUTPUT = SnapshotOutput(z,self)
-        # Read galaxies from snapshot
-        OUTPUT.readGalaxies(props=props,SIunits=SIunits,removeRedshiftString=removeRedshiftString)
-        # Add to galaxies data array
-        if self.galaxies is None:
-            self.galaxies = np.copy(OUTPUT.galaxies)
-        else:
-            self.galaxies = np.append(self.galaxies,np.copy(OUTPUT.galaxies))
-        # Delete output class
-        del OUTPUT
-        # Report progress
-        if progressObj is not None:
-            progressObj.increment()
-            progressObj.print_status_line(task="Redshift = "+str(z))
-        return 
-    
     
     
 class checkOutputFiles(object):
