@@ -135,7 +135,7 @@ class Redshift(Property):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if not self.matches(propertyName):
             msg = funcname+"(): Specified property '"+propertyName+"' is not a redshift."
-            msg = msg + "\n       Redshift options: "+", ".join(self.availableOptions))
+            msg = msg + "\n       Redshift options: "+", "+join(self.availableOptions)
             raise RuntimeError(msg)
         if propertyName == "snapshotRedshift":
             return self.getSnapshotRedshift(redshift)
