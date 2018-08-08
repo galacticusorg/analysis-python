@@ -17,6 +17,7 @@ class GalacticusHDF5(HDF5):
 
     Functions:
     
+     availableRedshifts(): Return a numpy array of available redshifts.
      availableDatasets(): Return list of names of available galaxy datasets.
      countGalaxies(): Count galaxies in HDF5 file.
      countGalaxiesAtRedshift(): Count galaxies at specified redshift output.
@@ -72,6 +73,19 @@ class GalacticusHDF5(HDF5):
                     self.outputs["z"][i] = (1.0/a) - 1.0
                 self.outputs = self.outputs.view(np.recarray)
         return
+
+    def availableRedshifts(self):
+        """
+        GalacticusHDF5.availableRedshifts(): Returns a list of available redshifts.
+                             
+        USAGE:  datasets = GalacticusHDF5.availableRedshifts()
+
+              OUTPUTS
+                redshifts -- List of redshifts available.
+
+        """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        return self.outputs.z
 
     def availableDatasets(self,z):
         """
