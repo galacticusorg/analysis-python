@@ -112,11 +112,13 @@ class Vega(Spectrum):
 
         """
         # Interpolate spectrum and transmission data
-        TRANSMISSION = interp1d(filterWavelength,filterTransmission)
+        TRANSMISSION = interp1d(filterWavelength,filterTransmission,\
+                                    bounds_error=False,fill_value="extrapolate")
         kRomberg = 8
         wavelength = np.linspace(filterWavelength.min(),filterWavelength.max(),2**kRomberg+1)
         deltaWavelength = wavelength[1] - wavelength[0]
-        FLUX = interp1d(self.spectrum.wavelength,self.spectrum.flux)
+        FLUX = interp1d(self.spectrum.wavelength,self.spectrum.flux,\
+                            bounds_error=False,fill_value="extrapolate")
         # Get AB spectrum
         spectrumAB = 1.0/wavelength**2
         # Get the filtered spectrum
