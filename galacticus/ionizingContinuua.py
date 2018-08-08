@@ -4,7 +4,7 @@ import sys,os,fnmatch,re
 import numpy as np
 from .datasets import Dataset
 from .properties.manager import Property
-from .filters.filters import GalacticusFilters
+from .filters.filters import GalacticusFilter
 from .constants import luminosityAB,plancksConstant
 
 def parseConinuumLuminosity(datasetName):
@@ -60,7 +60,7 @@ class IonizingContinuum(Property):
         if GALS[luminosityName] is None:
             return None
         # Load appropriate Galacticus filter
-        FILTER = GalacticusFilters().load(self.filterNames[MATCH.group("continuum")]+".xml")
+        FILTER = GalacticusFilter().load(self.filterNames[MATCH.group("continuum")]+".xml")
         # Compute continuum luminosity
         DATA = Dataset(name=propertyName)
         DATA.data = np.copy(GALS[luminosityName].data)*self.getConversionFactor(FILTER)
