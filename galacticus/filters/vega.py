@@ -4,6 +4,7 @@ import sys
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.integrate import romb
+import unittest
 from .. import rcParams
 from ..fileFormats.xmlTree import xmlTree
 from ..data import GalacticusData
@@ -31,7 +32,7 @@ class Spectrum(object):
         if TREE.elementExists("/spectrum/description"):
             self.description = TREE.getElement("/spectrum/description").text
         if TREE.elementExists("/spectrum/origin"):
-            self.description = TREE.getElement("/spectrum/origin").text
+            self.origin = TREE.getElement("/spectrum/origin").text
         for unit in TREE.tree.getroot().findall("units"):
             if unit.text.startswith("wavelengths"):
                 self.units["wavelengths"] = unit.text
@@ -41,7 +42,6 @@ class Spectrum(object):
         dtype=[("wavelength",float),("flux",float)]
         self.spectrum = np.zeros(len(DATA),dtype=dtype).view(np.recarray)
         for i,datum in enumerate(DATA):
-            print datum.text
             self.spectrum["wavelength"][i] = float(datum.text.split()[0])
             self.spectrum["flux"][i] = float(datum.text.split()[1])
         del TREE
@@ -75,6 +75,8 @@ class Vega(Spectrum):
             DATA = GalacticusData(verbose=self.verbose)
             spectrumFile = DATA.search("A0V_Castelli.xml")
             rcParams.set("filters","vegaSpectrumFile",spectrumFile)
+        if verbose:
+            print(classname+"(): Reading Vega spectrum from file "+spectrumFile+".")
         # Load spectrum
         self.loadFromFile(spectrumFile)
         # Load V-band filter
@@ -84,6 +86,8 @@ class Vega(Spectrum):
             filterFile = DATA.search("Buser_V.xml")
             rcParams.set("filters","vBandFilterFile",filterFile)        
         self.VBAND = Filter()
+        if verbose:
+            print(classname+"(): Reading V-band filter from file "+filterFile+".")
         self.VBAND.loadFromFile(filterFile)
         self.vFluxAB = None
         self.vFluxVega = None
@@ -123,7 +127,6 @@ class Vega(Spectrum):
         fluxAB = romb(filteredSpectrumAB,dx=deltaWavelength)
         return fluxAB,fluxVega
 
-
     def abVegaOffset(self,wavelength,transmission):
         """
         abVegaOffset(): Compute AB-Vega offset for specified filter transmission curve.
@@ -146,5 +149,58 @@ class Vega(Spectrum):
         # Return Vega offset
         offset = 2.5*np.log10(fluxVega*self.vFluxAB/self.vFluxVega/fluxAB)
         return offset            
+
+
+class UnitTest(unittest.TestCase):
+
+    def testLoadSpectrum(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        print("UNIT TEST: Vega: "+funcname) 
+        print("Creating Spectrum class instance")
+        SPEC = Spectrum()
+        DATA = GalacticusData(verbose=self.verbose)
+        spectrumFile = DATA.search("A0V_Castelli.xml")
+        SPEC.loadFromFile(spectrumFile)
+        self.assertIsNotNone(SPEC.description)
+        self.assertIsNotNone(SPEC.origin)
+        self.assertNotEqual(SPEC.units.keys(),0)
+        self.assertIsNotNone(SPEC.spectrum)
+        print("TEST COMPLETE")
+        print("\n")
+        return
+
+    
+
+
+    print("Creating Vega() class instance")
+    VEGA = Vega(verbose=True)        
+    
+def vegaUnitTest():
+
+    print("Reporting Vega spectrum information:")
+    assert(str(VEGA.description)!="None")
+    print("   description: "+str(VEGA.description))
+    assert(str(VEGA.origin)!="None")
+    print("   origin: "+str(VEGA.origin))
+    assert(VEGA.units!={})
+    if len(VEGA.units.keys())>0:
+        print("   units: "+"; ".join([VEGA.units[key] for key in VEGA.units.keys()]))
+    assert(str(VEGA.spectrum)!="None")
+    print("   spectrum: "+str(VEGA.spectrum))
+    print("Testing AB-Vega offset. Reading in SDSS r-band filter from Galacticus Datasets.")
+    DATA = GalacticusData()
+    filterFile = DATA.search("SDSS_r.xml")
+    FILTER = Filter()
+    FILTER.loadFromFile(filterFile)
+    print("AB-Vega offset reported in SDSS_r.xml file = "+str(FILTER.vegaOffset))
+    print("Computing AB-Vega offset for SDSS r-band")    
+    computedOffset = VEGA.abVegaOffset(FILTER.transmission.wavelength,FILTER.transmission.transmission)
+    print("Computed AB-Vega offset from Vega.abVegaOffset() = "+str(computedOffset))
+    print("Offset values differ by "+str(np.fabs(FILTER.vegaOffset-computedOffset)))
+    assert(np.fabs(FILTER.vegaOffset-computedOffset)<1.0e-4)
+    print("TEST COMPLETE")
+    print("\n")
+    return
+
 
 

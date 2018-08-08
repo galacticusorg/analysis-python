@@ -2,6 +2,7 @@
 
 import sys,fnmatch
 import numpy as np
+import unittest
 from . import Filter
 from .vega import Vega
 from ..data import GalacticusData
@@ -96,3 +97,22 @@ class GalacticusFilter(object):
                                                            FILTER.transmission.transmission)
             self.cache[filterName] = FILTER
         return FILTER
+
+
+class UnitTest(unittest.TestCase):
+
+    def testLoadStandardFilter(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: GalacticusFilter")
+        print("Create instance of GalacticusFilter class")
+        GF = GalacticusFilter()
+        print("Load SDSS r-band filter")
+        FILTER = GF.load("SDSS_r")
+        self.assertEqual(FILTER.name,"SDSS r")
+        self.assertIsNotNone(FILTER.effectiveWavelength)
+        self.assertIsNotNone(FILTER.transmission)
+        print("Successfully loaded SDSS r-band filter")
+        print("TEST COMPLETE")
+        print("\n")        
+
+    

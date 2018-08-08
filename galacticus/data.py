@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-import os,fnmatch
+import unittest
+import sys,os,fnmatch
 import warnings
 from . import rcParams
 
@@ -30,6 +31,8 @@ def recursiveGlob(treeroot,pattern):
 class GalacticusData(object):
 
     def __init__(self,verbose=True):
+        classname = self.__class__.__name__
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.verbose = verbose
         self.path = locateDatasetsRepository()
         # Check that the path exists
@@ -42,7 +45,7 @@ class GalacticusData(object):
         # Check that the static subdirectory exists
         self.static = self.path + "static/"
         if not os.path.exists(self.static):
-            msg = "ERROR! Static datasets path '"+DATASETS_PATH+"static' does not exist."
+            msg = funcname+"(): Static datasets path '"+DATASETS_PATH+"static' does not exist."
             raise RuntimeError(msg)
         # Make dynamic path if not found
         self.dynamic = self.path + "dynamic/"
@@ -54,9 +57,11 @@ class GalacticusData(object):
         return self.search(pattern)
 
     def _searchDirectory(self,path,pattern,errorNotFound=True):
+        classname = self.__class__.__name__
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         files = recursiveGlob(path,pattern)
         if len(files)>1:            
-            msg = "Multilple files found matching pattern "+pattern+"."
+            msg = classname+"(): Multilple files found matching pattern "+pattern+"."
             if self.verbose:
                 msg = msg + "DIRECTORY = "+path+"\nFiles found are:\n"+\
                     "\n".join(files)
@@ -68,7 +73,7 @@ class GalacticusData(object):
                 raise RuntimeError(msg)
             return None
         if self.verbose:
-            print("Returning file: "+files[0])
+            print(classname+"(): Returning file: "+files[0])
         return files[0]
 
     def searchStatic(self,pattern,errorNotFound=True):
@@ -84,7 +89,32 @@ class GalacticusData(object):
         dataFile = self.searchStatic(pattern,errorNotFound=True)
         return dataFile
     
+
+class UnitTest(unittest.TestCase):
     
+    def testFindFile(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: GalacticusData: "+funcname)
+        print("Creating instance of GalacticusData class")
+        DATA = GalacticusData(verbose=True)
+        print("Search for SDSS r-band filter")
+        filterFile = DATA.search("SDSS_r.xml")        
+        self.assertIsNotNone(filterFile)
+        print("SDSS r-band filter at: "+filterFile)
+        print("TEST COMPLETE")
+        print("\n")
+        return
+
+    def testNotFindFile(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: GalacticusData: "+funcname)
+        print("Creating instance of GalacticusData class")
+        DATA = GalacticusData(verbose=True)
+        print("Attempting search for a non-existent file.")    
+        self.assertRaises(RuntimeError,DATA.search,"thisFilterProbablyDoesNotExist.xml")        
+        print("TEST COMPLETE")
+        print("\n")
+        return
 
 
     

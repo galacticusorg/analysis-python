@@ -1,8 +1,9 @@
 #! /usr/bin/env python
 
 import __future__
-import sys
+import sys,os
 import numpy as np
+import unittest
 import xml.etree.ElementTree as ET
 from ..fileFormats.xmlTree import xmlTree
 from ..data import GalacticusData
@@ -95,12 +96,17 @@ class Filter(object):
             self.transmission["transmission"][i] = float(datum.text.split()[1])        
         # Load effective wavelength
         if TREE.elementExists("/filter/effectiveWavelength"): 
-            self.effectiveWavelength = TREE.getElement("/filter/effectiveWavelength").text
+            self.effectiveWavelength = float(TREE.getElement("/filter/effectiveWavelength").text)
         else:
             self.setEffectiveWavelength()
         # Load AB/Vega offset (if present)
         if TREE.elementExists("/filter/vegaOffset"):
             self.vegaOffset = TREE.getElement("/filter/vegaOffset").text
+            try:
+                self.vegaOffset = float(self.vegaOffset)
+            except ValueError:
+                pass
+                
         del TREE
         return 
 
@@ -127,9 +133,119 @@ class Filter(object):
         TREE.writeToFile(outFile)
         return
 
-                
 def loadFilterFromFile(filterFile):
     FILTER = Filter()
     FILTER.loadFromFile(filterFile)
     return FILTER
+
+
+class UnitTest(unittest.TestCase):
+
+    def testLoadFilter(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Filter: "+funcname)
+        print("Creating a Filter() class instance")
+        FILTER = Filter()
+        print("Reading in SDSS r-band filter")
+        DATA = GalacticusData(verbose=True)
+        filterFile = DATA.search("SDSS_r.xml")
+        FILTER.loadFromFile(filterFile)
+        print("Printing SDSS r-band Filter() attributes:")
+        self.assertIsNotNone(FILTER.name)
+        print("    name: "+FILTER.name)
+        self.assertIsNotNone(FILTER.description)
+        print("    description: "+str(FILTER.description))
+        self.assertIsNotNone(FILTER.origin)
+        print("    origin: "+str(FILTER.origin))
+        print("    url: "+str(FILTER.url))
+        self.assertIsNotNone(FILTER.effectiveWavelength)
+        print("    effectiveWavelength: "+str(FILTER.effectiveWavelength))
+        self.assertIsNotNone(FILTER.vegaOffset)
+        print("    effectiveVegaOffset: "+str(FILTER.vegaOffset))
+        self.assertIsNotNone(FILTER.transmission)
+        print("    transmission: "+str(FILTER.transmission))
+        print("TEST COMPLETE")
+        print("\n")
+    
+    def testCreateFilter(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Filter: "+funcname)
+        print("Creating a Filter() class instance")
+        FILTER = Filter()
+        print(" Create an example Gaussian filter")
+        from scipy.stats import norm
+        loc = 6000.0
+        scale = 500.0
+        print(" mean = "+str(loc)+" stdev = "+str(scale))
+        GAUSS = norm(loc=loc,scale=scale)
+        wave = np.linspace(4000,8000,200)
+        trans = GAUSS.pdf(wave)
+        trans /= trans.max()
+        print("Storing filter attributes")
+        FILTER = Filter()
+        FILTER.name = "GaussianFilter"
+        FILTER.description = "A Gaussian transmission curve centered on "+str(loc)+"A with width "+str(scale)+"A."
+        FILTER.origin = "unitTestFilter function"
+        FILTER.url = "None"
+        response = np.zeros(len(wave),dtype=[("wavelength",float),("transmission",float)]).view(np.recarray)
+        response["wavelength"] = wave
+        response["transmission"] = trans
+        FILTER.transmission = response
+        FILTER.setEffectiveWavelength()
+        self.assertIsNotNone(FILTER.description)
+        self.assertIsNotNone(FILTER.origin)
+        self.assertIsNotNone(FILTER.url)
+        self.assertIsNotNone(FILTER.effectiveWavelength)
+        self.assertIsNotNone(FILTER.transmission)
+        print("TEST COMPLETE")
+        print("\n")
+
+    def testWriteFilter(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Filter: "+funcname)
+        print("Creating a Filter() class instance")
+        FILTER = Filter()
+        print(" Create an example Gaussian filter")
+        from scipy.stats import norm
+        loc = 6000.0
+        scale = 500.0
+        print(" mean = "+str(loc)+" stdev = "+str(scale))
+        GAUSS = norm(loc=loc,scale=scale)
+        wave = np.linspace(4000,8000,200)
+        trans = GAUSS.pdf(wave)
+        trans /= trans.max()
+        print("Storing filter attributes")
+        FILTER = Filter()
+        FILTER.name = "GaussianFilter"
+        FILTER.description = "A Gaussian transmission curve centered on "+str(loc)+"A with width "+str(scale)+"A."
+        FILTER.origin = "unitTestFilter function"
+        FILTER.url = "None"
+        response = np.zeros(len(wave),dtype=[("wavelength",float),("transmission",float)]).view(np.recarray)
+        response["wavelength"] = wave
+        response["transmission"] = trans
+        FILTER.transmission = response
+        FILTER.setEffectiveWavelength()
+        print("Writing Gaussian filter to file")        
+        tmpfile = "gaussianFilter.xml"
+        FILTER.writeToFile(tmpfile)
+        print("Re-reading Gaussian filter from file")
+        FILTER2 = Filter()
+        FILTER2.loadFromFile(tmpfile)
+        print("Checking attributes read from file are consistent")
+        for key in ["name","origin","url","description"]:
+            self.assertEqual(FILTER.__dict__[key],FILTER2.__dict__[key])        
+        self.assertTrue(np.fabs(FILTER.effectiveWavelength-FILTER2.effectiveWavelength)<1.0e-4)
+        for i in range(len(FILTER.transmission.wavelength)):
+            subPercent = FILTER.transmission.wavelength[i]*0.001
+            diff = np.fabs(FILTER.transmission.wavelength[i]-FILTER2.transmission.wavelength[i])
+            self.assertTrue(diff<subPercent)
+            subPercent = FILTER.transmission.transmission[i]*0.001
+            diff = np.fabs(FILTER.transmission.transmission[i]-FILTER2.transmission.transmission[i])
+            self.assertTrue(diff<subPercent)
+        os.remove(tmpfile)
+        print("TEST COMPLETE")
+        print("\n")
+        return
+        
+
 
