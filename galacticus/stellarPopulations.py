@@ -4,9 +4,9 @@ import sys,os,fnmatch,glob,shutil
 import numpy as np
 import requests
 import tarfile
-from ..fileFormats.hdf5 import HDF5
-from ..data import GalacticusData
-from ..utils.progress import Progress
+from .fileFormats.hdf5 import HDF5
+from .data import GalacticusData
+from .utils.progress import Progress
 
 def getSSPDataFiles(chunks=1024,forceDownload=False):
     """

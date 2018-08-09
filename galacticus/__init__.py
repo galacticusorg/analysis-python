@@ -59,3 +59,4 @@ for path in ["GALACTICUS_EXEC_PATH","GALACTICUS_DATA_PATH"]:
         rcParams.update("paths",path,os.environ[path])
 
     
+

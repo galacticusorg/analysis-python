@@ -2,8 +2,8 @@
 
 import unittest
 
-# Edit this to include new modules or TestCases to run.                                                                                                                         
-_MODS = ['galacticus.filters','galacticus.filters.filters']
+# Edit this to include new modules or TestCases to run.
+_MODS = ['galacticus.filters','galacticus.filters.filters','galacticus.filters.vega']
 
 def _main():
     suite = unittest.defaultTestLoader.loadTestsFromNames(_MODS)

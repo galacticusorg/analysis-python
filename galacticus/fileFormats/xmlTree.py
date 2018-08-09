@@ -3,6 +3,7 @@
 import os,sys,fnmatch
 import numpy as np
 import warnings
+import unittest
 import xml.etree.ElementTree as ET
 
 
@@ -120,7 +121,7 @@ class xmlTree(object):
                 parentName = path.split("/")[-1]
                 self.createElement(parentPath,parentName,createParents=createParents)
             else:
-                raise ValueError("Parent path does not exist!")
+                raise RuntimeError(funcname+"(): Parent path does not exist!")
         PARENT = self.getElement(path)
         ET.SubElement(PARENT,name,attrib=attrib).text = text        
         self.map.append(path+"/"+name)
@@ -137,8 +138,7 @@ class xmlTree(object):
             self.createElement(parentPath,parentName,createParents=createParents)
         ELEM = self.getElement(path)
         for key in attrib.keys():
-            if key in ELEM.attrib.keys():
-                ELEM.attrib[key] = attrib[key]
+            ELEM.attrib[key] = attrib[key]                
         if text is not None:
             ELEM.text = text
         return
@@ -158,62 +158,129 @@ class xmlTree(object):
             formatFile(outFile)
         return
 
-        
 
-def xmlTreeUnitTest():
-    print("UNIT TEST: xmlTree")
-    print("Creating xmlTree instance")
-    TREE = xmlTree(root="root")
-    print("Creating element 'elem1' with text 'hello world' and attribute value=1")
-    TREE.createElement("/root","elem1",attrib={"value":1},text="hello world",createParents=True)    
-    print("Checking 'elem1' created")    
-    print("    'elem1' exists = "+str(TREE.elementExists("/root/elem1")))
-    assert(TREE.elementExists("/root/elem1"))
-    print(" View path to element in tree hierarchy:")
-    print("    path = "+str(TREE.matchPath("/root/elem1")[0]))
-    print("Retrieve element 'elem1':")
-    ELEM = TREE.getElement("/root/elem1")
-    print("    elem1.text = "+ELEM.text)
-    print("    elem1[value] = "+str(ELEM.attrib["value"]))
-    print("Removing element 'elem1':")
-    TREE.removeElement("/root/elem1")
-    print("    'elem1' exists = "+str(TREE.elementExists("/root/elem1")))
-    assert(not TREE.elementExists("/root/elem1"))
-    print("Creating element 'elem2' with path /root/elem1/elem2 and text 'goodbye world'")
-    TREE.createElement("/root/elem1","elem2",text="goodbye world",createParents=True)
-    print("Checking 'elem2' created")    
-    print("    'elem2' exists = "+str(TREE.elementExists("/root/elem1/elem2")))
-    assert(TREE.elementExists("/root/elem1/elem2"))
-    print(" View path to element in tree hierarchy:")
-    print("    path = "+str(TREE.matchPath("/root/elem1/elem2")[0]))
-    print("    elements in 'elem1' = "+str(TREE.lsElements(TREE.getElement("/root/elem1"))))
-    print("Retrieve element 'elem2':")
-    ELEM = TREE.getElement("/root/elem1/elem2")
-    print("    elem2.text = "+ELEM.text)
-    print("Writing xml tree to temporary file")
-    tmpfile = "unitTest.xml"
-    TREE.writeToFile(tmpfile)
-    del TREE
-    print("Reading xml tree from temporary file")
-    TREE2 = xmlTree(file=tmpfile)
-    print("Map tree hierarchy:")
-    TREE2.mapTree()
-    print("     hierarchy structure = "+", ".join(TREE2.map))
-    print("Retrieve element 'elem2':")
-    ELEM = TREE2.getElement("/root/elem1/elem2")
-    print("    elem2.text = "+ELEM.text)
-    assert(ELEM.text=="goodbye world")
-    print("Update 'elem2' text to 'time to say goodbye'")
-    TREE2.updateElement("/root/elem1/elem2",text="time to say goodbye")
-    print("Retrieve element 'elem2':")
-    ELEM = TREE2.getElement("/root/elem1/elem2")
-    print("    elem2.text = "+ELEM.text)    
-    assert(ELEM.text=="time to say goodbye")
-    print("Checks complete. Cleaning up.")
-    os.remove(tmpfile)
-    print("TEST COMPLETE")
-    print("\n")
-    return
+class UnitTest(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(self):
+        self.tmpfile = "unitTest.xml"
+        return
+    
+    @classmethod
+    def tearDownClass(self):
+        os.remove(self.tmpfile)
+        return
+
+    def testCreateTree(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name                
+        print("UNIT TEST: xmlTree: "+funcname)
+        print("Creating xmlTree instance")
+        TREE = xmlTree(root="root")
+        print("Testing creating elements")
+        TREE.createElement("/root","elem1",attrib={"value":1},text="hello world",createParents=True)    
+        self.assertTrue(TREE.elementExists("/root/elem1"))    
+        matches = TREE.matchPath("/root/elem1")
+        self.assertEqual(len(matches),1)
+        self.assertEqual(matches[0],"/root/elem1")
+        self.assertRaises(RuntimeError,TREE.createElement,"/root/elem2","elem3",createParents=False)
+        print("TEST COMPLETE")
+        print("\n")
+        return        
+        
+    def testReadElements(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name                
+        print("UNIT TEST: xmlTree: "+funcname)
+        print("Creating xmlTree instance")
+        TREE = xmlTree(root="root")
+        TREE.createElement("/root","elem1",attrib={"value":1},text="hello world",createParents=True)            
+        print("Testing reading elements")
+        ELEM = None
+        ELEM = TREE.getElement("/root/elem1")
+        self.assertIsNotNone(ELEM)
+        self.assertEqual(ELEM.text,"hello world")
+        self.assertEqual(len(ELEM.attrib.keys()),1)
+        self.assertEqual(ELEM.attrib["value"],1)
+        TREE.createElement("/root/elem2","elem3",text="goodbye world",createParents=True)
+        self.assertTrue(TREE.elementExists("/root/elem2"))                
+        self.assertTrue(TREE.elementExists("/root/elem2/elem3"))                
+        ELEM = TREE.getElement("/root/elem2/elem3")        
+        self.assertEqual(ELEM.text,"goodbye world")
+        print("TEST COMPLETE")
+        print("\n")
+        return        
+
+    def testRemoveElements(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name                
+        print("UNIT TEST: xmlTree: "+funcname)
+        print("Creating xmlTree instance")
+        TREE = xmlTree(root="root")
+        TREE.createElement("/root","elem1",attrib={"value":1},text="hello world",createParents=True)            
+        self.assertTrue(TREE.elementExists("/root/elem1"))    
+        TREE.createElement("/root/elem2","elem3",text="goodbye world",createParents=True)
+        self.assertTrue(TREE.elementExists("/root/elem2/elem3"))    
+        print("Testing removal of elements")
+        TREE.removeElement("/root/elem2/elem3")
+        self.assertTrue(TREE.elementExists("/root/elem2"))   
+        self.assertFalse(TREE.elementExists("/root/elem2/elem3"))    
+        self.assertTrue(TREE.elementExists("/root/elem1"))    
+        TREE.removeElement("/root/elem1")
+        self.assertFalse(TREE.elementExists("/root/elem1"))    
+        print("TEST COMPLETE")
+        print("\n")
+        return        
+
+    def testUpdateElements(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name                
+        print("UNIT TEST: xmlTree: "+funcname)
+        print("Creating xmlTree instance")
+        TREE = xmlTree(root="root")
+        TREE.createElement("/root","elem1",attrib={"value":1},text="hello world",createParents=True)            
+        ELEM = TREE.getElement("/root/elem1")
+        self.assertEqual(ELEM.text,"hello world")
+        self.assertEqual(ELEM.attrib["value"],1)
+        print("Testing updating element attributes")
+        TREE.updateElement("/root/elem1",text="goodbye world",attrib={"value":2,"other":4})
+        self.assertEqual(ELEM.text,"goodbye world")
+        self.assertEqual(ELEM.attrib["value"],2)
+        self.assertTrue("other" in ELEM.attrib.keys())
+        self.assertEqual(ELEM.attrib["other"],4)
+        ELEM2 = TREE.getElement("/root/elem1")
+        self.assertEqual(ELEM2.text,"goodbye world")
+        self.assertEqual(ELEM2.attrib["value"],2)
+        self.assertTrue("other" in ELEM2.attrib.keys())
+        self.assertEqual(ELEM2.attrib["other"],4)
+        print("TEST COMPLETE")
+        print("\n")        
+        return
+
+    def testReadWrite(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name                
+        print("UNIT TEST: xmlTree: "+funcname)
+        print("Creating xmlTree instance")
+        TREE = xmlTree(root="root")
+        TREE.createElement("/root","elem1",attrib={"value":"1"},text="hello world",createParents=True)           
+        TREE.createElement("/root/elem2","elem3",text="goodbye world",createParents=True)
+        print("Testing writing to file")
+        TREE.writeToFile(self.tmpfile)
+        self.assertTrue(os.path.exists(self.tmpfile))
+        del TREE        
+        print("Testing reading from file")
+        TREE2 = xmlTree(file=self.tmpfile)
+        self.assertTrue(TREE2.elementExists("/root/elem1"))
+        self.assertTrue(TREE2.elementExists("/root/elem2/elem3"))
+        ELEM = None
+        ELEM = TREE2.getElement("/root/elem1")
+        self.assertIsNotNone(ELEM)
+        self.assertEqual(ELEM.text,"hello world")
+        self.assertEqual(len(ELEM.attrib.keys()),1)
+        self.assertEqual(ELEM.attrib["value"],"1")
+        ELEM = TREE2.getElement("/root/elem2/elem3")        
+        self.assertEqual(ELEM.text,"goodbye world")
+        print("TEST COMPLETE")
+        print("\n")        
+        return
+
+
 
 
 

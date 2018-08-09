@@ -160,7 +160,8 @@ class UnitTest(unittest.TestCase):
         print("UNIT TEST: Vega: "+funcname) 
         print("Creating Spectrum class instance")
         SPEC = Spectrum()
-        DATA = GalacticusData(verbose=self.verbose)
+        print("Testing loading of Vega spectrum")
+        DATA = GalacticusData(verbose=True)
         spectrumFile = DATA.search("A0V_Castelli.xml")
         SPEC.loadFromFile(spectrumFile)
         self.assertIsNotNone(SPEC.description)
@@ -171,38 +172,21 @@ class UnitTest(unittest.TestCase):
         print("\n")
         return
 
+    def testComputeABVegaOffset(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        print("UNIT TEST: Vega: "+funcname) 
+        print("Creating Vega() class instance")
+        VEGA = Vega(verbose=True)        
+        print("Testing calculation of AB-Vega offset for SDSS r-band")
+        DATA = GalacticusData()
+        filterFile = DATA.search("SDSS_r.xml")
+        FILTER = Filter()
+        FILTER.loadFromFile(filterFile)        
+        computedOffset = VEGA.abVegaOffset(FILTER.transmission.wavelength,\
+                                               FILTER.transmission.transmission)
+        diff = np.fabs(computedOffset-FILTER.vegaOffset)        
+        self.assertLessEqual(diff,np.fabs(FILTER.vegaOffset*0.0001))
+        print("TEST COMPLETE")
+        print("\n")
+        return
     
-
-
-    print("Creating Vega() class instance")
-    VEGA = Vega(verbose=True)        
-    
-def vegaUnitTest():
-
-    print("Reporting Vega spectrum information:")
-    assert(str(VEGA.description)!="None")
-    print("   description: "+str(VEGA.description))
-    assert(str(VEGA.origin)!="None")
-    print("   origin: "+str(VEGA.origin))
-    assert(VEGA.units!={})
-    if len(VEGA.units.keys())>0:
-        print("   units: "+"; ".join([VEGA.units[key] for key in VEGA.units.keys()]))
-    assert(str(VEGA.spectrum)!="None")
-    print("   spectrum: "+str(VEGA.spectrum))
-    print("Testing AB-Vega offset. Reading in SDSS r-band filter from Galacticus Datasets.")
-    DATA = GalacticusData()
-    filterFile = DATA.search("SDSS_r.xml")
-    FILTER = Filter()
-    FILTER.loadFromFile(filterFile)
-    print("AB-Vega offset reported in SDSS_r.xml file = "+str(FILTER.vegaOffset))
-    print("Computing AB-Vega offset for SDSS r-band")    
-    computedOffset = VEGA.abVegaOffset(FILTER.transmission.wavelength,FILTER.transmission.transmission)
-    print("Computed AB-Vega offset from Vega.abVegaOffset() = "+str(computedOffset))
-    print("Offset values differ by "+str(np.fabs(FILTER.vegaOffset-computedOffset)))
-    assert(np.fabs(FILTER.vegaOffset-computedOffset)<1.0e-4)
-    print("TEST COMPLETE")
-    print("\n")
-    return
-
-
-

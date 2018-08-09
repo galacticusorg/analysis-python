@@ -13,6 +13,7 @@ from .filters import Filter
 from .filters.filters import GalacticusFilter
 from .data import GalacticusData
 
+
 @Property.register_subclass('dustCompendium')
 class DustCompendium(Property):
     """

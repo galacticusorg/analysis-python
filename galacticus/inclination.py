@@ -2,6 +2,7 @@
 
 import sys
 import numpy as np
+import unittest
 from . import rcParams
 from .datasets import Dataset
 from .properties.manager import Property
@@ -88,4 +89,30 @@ class Inclination(Property):
         inclination = np.random.random(N)
         DATA = Dataset(name="inclination",data=inclination,attr={"degrees":degrees})
         return DATA
+    
+
+
+class UnitTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(self):
+        from .galaxies import Galaxies
+        GALS = Galaxies()
+        self.INC = Inclination(GALS)
+        return
+    
+    @classmethod
+    def tearDownClass(self):
+        del self.INC
+        return
+
+    def testMatches(self):        
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Inclination: "+funcname)
+        print("Testing matches function")
+        self.assertTrue(self.INC.matches("inclination"))
+        self.assertFalse(self.INC.matches("redshift"))
+        print("TEST COMPLETE")
+        return
+
     
