@@ -82,7 +82,7 @@ class UnitTest(unittest.TestCase):
             if not os.path.exists(DATA.dynamic+"/examples"):
                 os.makedirs(DATA.dynamic+"/examples")
             copyfile(DATA.static+"/examples/galacticus.snapshotExample.hdf5",self.snapshotFile)
-        # Initialize the Inclination class.
+        # Initialize the ReadHDF5 class.
         GH5 = GalacticusHDF5(self.snapshotFile,'r')
         GALS = Galaxies(GH5Obj=GH5)
         self.READ = ReadHDF5(GALS)
