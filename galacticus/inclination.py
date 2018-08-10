@@ -100,15 +100,18 @@ class UnitTest(unittest.TestCase):
         from .io import GalacticusHDF5
         from .data import GalacticusData
         from shutil import copyfile
+        # Locate the dynamic version of the galacticus.snapshotExample.hdf5 file.
         DATA = GalacticusData()
         self.snapshotFile = DATA.searchDynamic("galacticus.snapshotExample.hdf5")        
         self.removeExample = False
+        # If the file does not exist, create a copy from the static version.
         if self.snapshotFile is None:
             self.snapshotFile = DATA.dynamic+"/examples/galacticus.snapshotExample.hdf5"
             self.removeExample = True
             if not os.path.exists(DATA.dynamic+"/examples"):
                 os.makedirs(DATA.dynamic+"/examples")
             copyfile(DATA.static+"/examples/galacticus.snapshotExample.hdf5",self.snapshotFile)
+        # Initialize the Inclination class.
         GH5 = GalacticusHDF5(self.snapshotFile,'r')
         GALS = Galaxies(GH5Obj=GH5)
         self.INC = Inclination(GALS)
@@ -116,6 +119,7 @@ class UnitTest(unittest.TestCase):
     
     @classmethod
     def tearDownClass(self):
+        # Clear memory and close/delete files as necessary.
         self.INC.galaxies.GH5Obj.close()
         del self.INC
         if self.removeExample:
@@ -139,7 +143,6 @@ class UnitTest(unittest.TestCase):
         print("TEST COMPLETE")
         print("\n")
         return
-
 
     def testMatches(self):        
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name

@@ -2,8 +2,9 @@
 
 import unittest
 import galacticus.properties.manager
-from galacticus.modules import findModuleChildren
-_MODS = findModuleChildren(unittest.TestCase)
+
+# Edit this to include new modules or TestCases to run.
+_MODS = ['galacticus.io.read']
 
 def _main():
     suite = unittest.defaultTestLoader.loadTestsFromNames(_MODS)
