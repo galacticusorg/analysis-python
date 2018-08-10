@@ -96,11 +96,11 @@ class UnitTest(unittest.TestCase):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         print("UNIT TEST: GalacticusData: "+funcname)
         print("Creating instance of GalacticusData class")
-        DATA = GalacticusData(verbose=True)
+        DATA = GalacticusData(verbose=False)
         print("Search for SDSS r-band filter")
         filterFile = DATA.search("SDSS_r.xml")        
         self.assertIsNotNone(filterFile)
-        print("SDSS r-band filter at: "+filterFile)
+        self.assertTrue(filterFile.endswith("filters/SDSS_r.xml"))
         print("TEST COMPLETE")
         print("\n")
         return
@@ -109,7 +109,7 @@ class UnitTest(unittest.TestCase):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         print("UNIT TEST: GalacticusData: "+funcname)
         print("Creating instance of GalacticusData class")
-        DATA = GalacticusData(verbose=True)
+        DATA = GalacticusData(verbose=False)
         print("Attempting search for a non-existent file.")    
         self.assertRaises(RuntimeError,DATA.search,"thisFilterProbablyDoesNotExist.xml")        
         print("TEST COMPLETE")

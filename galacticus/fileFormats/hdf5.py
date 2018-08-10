@@ -5,6 +5,7 @@ import h5py
 import numpy as np
 import fnmatch
 import unittest
+import warnings
 
 def flattenNestedList(l):
     return [item for sublist in l for item in sublist]
@@ -203,7 +204,7 @@ class HDF5(object):
         # Check if dataset exists
         if self.datasetExists(hdfdir,name,exit_if_missing=False):
             if not overwrite:
-                print("WARNING! "+funcname+"(): Unable to write dataset (overwrite=False).")
+                warnings.warn(funcname+"(): Unable to write dataset (overwrite=False).")
                 return
             else:
                 del g[name]
@@ -411,7 +412,7 @@ class HDF5(object):
             if self.verbose:
                 if len(bad)>0:
                     linereturn = "\n         "
-                    print("WARNING! "+funcname+"(): Following attributes not present in '"+hdfdir+\
+                    warnings.warn(funcname+"(): Following attributes not present in '"+hdfdir+\
                               "':"+linereturn+linereturn.join(bad))
             if len(good)==0:
                 return {}
@@ -427,7 +428,7 @@ class HDF5(object):
         for att in attributes.keys():
             if att in self.fileObj[hdfdir].attrs.keys():
                 if self.verbose:
-                        print("WARNING! "+funcname+"(): Attribute '"+att+"' already exists!")
+                        warnings.warn(funcname+"(): Attribute '"+att+"' already exists!")
                 if overwrite:
                     if self.verbose:
                         print("        Overwriting attribute '"+att+"'")                        
@@ -637,22 +638,27 @@ class UnitTest(unittest.TestCase):
         F.mkGroup("/Header")
         F.mkGroup("/Data/ExampleGroup")
         print("Testing writing datasets")        
+        # Test writing dataset to root
         data1 = np.random.rand(50)
         F.writeDataset("/Data","ExampleData1",data1)        
         self.assertTrue("ExampleData1" in F.fileObj["/Data"].keys())
         self.assertTrue(F.datasetExists("/Data","ExampleData1"))
         diff = np.fabs(data1-np.array(F.fileObj["/Data/ExampleData1"]))
         [self.assertEqual(d,0.0) for d in diff]
+        # Test writing dataset to subgroup
         data2 = np.random.rand(50)
         F.writeDataset("/Data/ExampleGroup","ExampleData2",data2)        
         self.assertTrue("ExampleData2" in F.fileObj["/Data/ExampleGroup"].keys())
         self.assertTrue(F.datasetExists("/Data/ExampleGroup","ExampleData2"))
         diff = np.fabs(data2-np.array(F.fileObj["/Data/ExampleGroup/ExampleData2"]))
         [self.assertEqual(d,0.0) for d in diff]
+        # Test overwriting option
         print("Testing overwriting datasets")
-        F.writeDataset("/Data","ExampleData1",data2,overwrite=False)        
-        diff = np.fabs(data1-np.array(F.fileObj["/Data/ExampleData1"]))
-        [self.assertEqual(d,0.0) for d in diff]
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            F.writeDataset("/Data","ExampleData1",data2,overwrite=False)        
+            diff = np.fabs(data1-np.array(F.fileObj["/Data/ExampleData1"]))
+            [self.assertEqual(d,0.0) for d in diff]
         F.writeDataset("/Data","ExampleData1",data2,overwrite=True)        
         diff = np.fabs(data2-np.array(F.fileObj["/Data/ExampleData1"]))
         [self.assertEqual(d,0.0) for d in diff]

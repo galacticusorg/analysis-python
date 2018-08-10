@@ -3,6 +3,7 @@
 import sys,os
 import numpy as np
 import unittest
+import warnings
 from .datasets import Dataset
 from .properties.manager import Property
 
@@ -127,20 +128,22 @@ class UnitTest(unittest.TestCase):
         redshift = 1.0
         self.assertRaises(RuntimeError,self.BULGE.get,"aMissingProperty",redshift)
         for name in ["MassStellar","StarFormationRate"]:
-            OUT = self.BULGE.galaxies.GH5Obj.selectOutput(redshift)
-            bulge = np.array(OUT["nodeData/spheroid"+name]) 
-            disk = np.array(OUT["nodeData/disk"+name])
-            data = bulge/(bulge+disk)
-            DATA = self.BULGE.get("bulgeToTotal"+name,redshift)
-            self.assertIsNotNone(DATA)
-            self.assertEqual(DATA.name,"bulgeToTotal"+name)
-            self.assertIsNotNone(DATA.data)
-            diff = np.fabs(data-DATA.data)
-            for i in range(len(diff)):
-                if np.isnan(diff[i]):
-                    self.assertEqual(disk[i]+bulge[i],0.0)
-                else:
-                    self.assertLessEqual(diff[i],1.0e-6)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore",message="invalid value encountered in divide")
+                OUT = self.BULGE.galaxies.GH5Obj.selectOutput(redshift)
+                bulge = np.array(OUT["nodeData/spheroid"+name]) 
+                disk = np.array(OUT["nodeData/disk"+name])
+                data = bulge/(bulge+disk)
+                DATA = self.BULGE.get("bulgeToTotal"+name,redshift)
+                self.assertIsNotNone(DATA)
+                self.assertEqual(DATA.name,"bulgeToTotal"+name)
+                self.assertIsNotNone(DATA.data)
+                diff = np.fabs(data-DATA.data)
+                for i in range(len(diff)):
+                    if np.isnan(diff[i]):
+                        self.assertEqual(disk[i]+bulge[i],0.0)
+                    else:
+                        self.assertLessEqual(diff[i],1.0e-6)
         print("TEST COMPLETE")
         print("\n")
         return

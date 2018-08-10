@@ -147,7 +147,7 @@ class UnitTest(unittest.TestCase):
         print("Creating a Filter() class instance")
         FILTER = Filter()
         print("Testing loading a filter from a file")
-        DATA = GalacticusData(verbose=True)
+        DATA = GalacticusData(verbose=False)
         filterFile = DATA.search("SDSS_r.xml")
         FILTER.loadFromFile(filterFile)
         self.assertIsNotNone(FILTER.name)
