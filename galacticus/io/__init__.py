@@ -379,7 +379,7 @@ class GalacticusHDF5(HDF5):
         # Select epoch closest to specified redshift        
         iselect = np.argmin(np.fabs(self.outputs.z-z))
         outstr = "Output"+str(self.outputs["iout"][iselect])
-        if self._verbose:
+        if self.verbose:
             print(funcname+"(): Nearest output is "+outstr+" (redshift = "+str(self.outputs.z[iselect])+")")
         return self.fileObj["Outputs/"+outstr]
 

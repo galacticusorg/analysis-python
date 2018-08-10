@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import sys
+import sys,os
 import numpy as np
 import unittest
 from . import rcParams
@@ -97,22 +97,58 @@ class UnitTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         from .galaxies import Galaxies
-        GALS = Galaxies()
+        from .io import GalacticusHDF5
+        from .data import GalacticusData
+        from shutil import copyfile
+        DATA = GalacticusData()
+        self.snapshotFile = DATA.searchDynamic("galacticus.snapshotExample.hdf5")        
+        self.removeExample = False
+        if self.snapshotFile is None:
+            self.snapshotFile = DATA.dynamic+"/examples/galacticus.snapshotExample.hdf5"
+            self.removeExample = True
+            if not os.path.exists(DATA.dynamic+"/examples"):
+                os.makedirs(DATA.dynamic+"/examples")
+            copyfile(DATA.static+"/examples/galacticus.snapshotExample.hdf5",self.snapshotFile)
+        GH5 = GalacticusHDF5(self.snapshotFile,'r')
+        GALS = Galaxies(GH5Obj=GH5)
         self.INC = Inclination(GALS)
         return
     
     @classmethod
     def tearDownClass(self):
+        self.INC.galaxies.GH5Obj.close()
         del self.INC
+        if self.removeExample:
+            os.remove(self.snapshotFile)
         return
+
+    def testGet(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Inclination: "+funcname)
+        print("Testing Inclination.get() function")
+        redshift = 1.0
+        DATA = self.INC.get("inclination",redshift)
+        N = self.INC.galaxies.GH5Obj.countGalaxies(redshift)
+        self.assertIsNotNone(DATA)
+        self.assertEqual(DATA.name,"inclination")
+        self.assertIsNotNone(DATA.data)
+        self.assertEqual(DATA.data.size,N)
+        self.assertTrue(len(DATA.attr.keys())>0)
+        self.assertTrue("degrees" in DATA.attr.keys())
+        self.assertRaises(RuntimeError,self.INC.get,"notAnInclination",redshift)
+        print("TEST COMPLETE")
+        print("\n")
+        return
+
 
     def testMatches(self):        
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         print("UNIT TEST: Inclination: "+funcname)
-        print("Testing matches function")
+        print("Testing Inclination.matches() function")
         self.assertTrue(self.INC.matches("inclination"))
         self.assertFalse(self.INC.matches("redshift"))
         print("TEST COMPLETE")
+        print("\n")
         return
 
     
