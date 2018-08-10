@@ -7,14 +7,14 @@ from .datasets import Dataset
 from .properties.manager import Property
 
 
-@Property.register_subclass('totals')
-class Totals(Property):
+@Property.register_subclass('bulgetototal')
+class BulgeToTotal(Property):
     """
-    Totals: Compute a total property by summing up the disk and spheroid components.
+    BulgeToTotal: Compute a bulge-to-total ratio based upon specified galaxy property.
 
     Functions: 
             matches(): Indicates whether specified dataset can be processed by this class.  
-            get(): Computes galaxy total at specified redshift.
+            get(): Computes bulge-to-total ratio at specified redshift.
 
     """    
     def __init__(self,galaxies):
@@ -22,14 +22,14 @@ class Totals(Property):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.galaxies = galaxies
         return
-        
+
     def matches(self,propertyName,redshift=None):
         """
-        Totals.matches(): Returns boolean to indicate whether this class can 
-                          process the specified property.
+        BulgeToTotal.matches(): Returns boolean to indicate whether this class can 
+                                process the specified property.
 
-        USAGE: match =  Totals.matches(propertyName,[redshift=None])                                                                                                       
-        
+        USAGE: match =  BulgeToTotal.matches(propertyName,[redshift=None])
+
           INPUTS 
               propertyName -- Name of property to process.
               redshift     -- Redshift value to query Galacticus HDF5 outputs. 
@@ -39,18 +39,18 @@ class Totals(Property):
                               this property.
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        return propertyName.startswith("total")
+        return propertyName.startswith("bulgeToTotal")
     
     def get(self,propertyName,redshift):
         """
-        Totals.get(): Compute total galaxy property using disk and spheroid 
-                      components at specified redshift.
+        BulgeToTotal.get(): Compute bulge-to-total ratio for specified galaxy property 
+                            using total and spheroid components at specified redshift.
 
-        USAGE: DATA = Totals.get(propertyName,redshift)
+        USAGE: DATA = BulgeToTotal.get(propertyName,redshift)
 
            INPUTS
-             propertyName -- Name of total property to compute. This name
-                             shoud start with 'total'.
+             propertyName -- Name of bulge-to-total ratio to compute. This name
+                             shoud start with 'bulgeToTotal'.
              redshift     -- Redshift value to query Galacticus HDF5 outputs.
 
            OUTPUTS
@@ -61,15 +61,16 @@ class Totals(Property):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if not self.matches(propertyName):
             raise RuntimeError(funcname+"(): Cannot process property '"+propertyName+"'.")
-        # Get disk and spheroid properties
-        components = [propertyName.replace("total","disk"),propertyName.replace("total","spheroid")]
-        GALS = self.galaxies.get(redshift,properties=components)
+        # Get spheroid and total properties
+        spheroid = propertyName.replace("bulgeToTotal","spheroid")
+        total = propertyName.replace("bulgeToTotal","total")
+        GALS = self.galaxies.get(redshift,properties=[spheroid,total])
         if any([GALS[key] is None for key in GALS.keys()]):
             return None
-        # Sum components and return total
+        # Compute ratio and return result
         DATA = Dataset(name=propertyName)
-        DATA.attr = GALS[components[0]].attr
-        DATA.data = np.copy(GALS[components[0]].data+GALS[components[1]].data)
+        DATA.attr = {}
+        DATA.data = np.copy(GALS[spheroid].data/GALS[total].data)
         del GALS
         return DATA
 
