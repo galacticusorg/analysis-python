@@ -27,7 +27,7 @@ class Redshift(Property):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.galaxies = galaxies
-        self.availableOptions = ["snapshotRedshift","observedRedshift"]
+        self.availableOptions = ["snapshotRedshift","observedRedshift","redshift"]
         return
 
     def matches(self,propertyName,redshift=None):
@@ -113,6 +113,17 @@ class Redshift(Property):
         DATA.data = np.ones(N,dtype=float)*zsnap
         return DATA
 
+    def getRedshift(self,redshift):
+        if self.galaxies.GH5Obj.datasetExists("lightconeRedshift",redshift):
+            name = "lightconeRedshift"
+        else:
+            name = "snapshotRedshift"
+        GALS = self.galaxies.get(redshift,properties=[name])
+        DATA = GALS[name]
+        DATA.name = "redshift"
+        return DATA
+        
+
     def get(self,propertyName,redshift):
         """        
         Redshift.get(): Compute galaxy redshifts for specified HDF5 output. If
@@ -123,8 +134,8 @@ class Redshift(Property):
         
         INPUTS
             propertyName -- Name of property to compute. 
-            redshift     -- Redshift value to query Galacticus HDF5 outputs.                                                                                                
-        
+            redshift     -- Redshift value to query Galacticus HDF5 outputs.
+
         OUTPUT 
             DATA         -- Instance of galacticus.datasets.Dataset() class
                             containing computed galaxy redshift, or None if
@@ -141,4 +152,6 @@ class Redshift(Property):
             return self.getSnapshotRedshift(redshift)
         if propertyName == "observedRedshift":
             return self.getObservedRedshift(redshift)
+        if propertyName == "redshift":
+            return self.getRedshift(redshift)
         return None

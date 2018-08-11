@@ -5,8 +5,12 @@ import sys,os
 import numpy as np
 import unittest
 import xml.etree.ElementTree as ET
+from scipy.integrate import romb
+from scipy.interpolate import interp1d
 from ..fileFormats.xmlTree import xmlTree
 from ..data import GalacticusData
+from ..constants import speedOfLight,angstrom
+from ..constants import luminosityAB,luminositySolar
 
 def computeEffectiveWavelength(wavelength,transmission):
     """
@@ -132,6 +136,27 @@ class Filter(object):
         TREE.createElement("/filter","vegaOffset",text=str(self.vegaOffset))
         TREE.writeToFile(outFile)
         return
+
+    def getTransmissionAtWavelength(self,wavelength):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        transmissionCurve = interp1d(self.transmission.wavelength,\
+                                         self.transmission.transmission,\
+                                         fill_value=0.0,bounds_error=False)
+        return transmissionCurve(wavelength)
+
+def filterLuminosityAB(FILTER):
+    # Integrate a zero-magnitude AB source under the filter
+    kRomb = 10
+    N = 2**kRomb+1
+    wavelengths = np.linspace(FILTER.transmission.wavelength[0],\
+                                  FILTER.transmisison.wavelength[-1],\
+                                  N)
+    deltaWavelength = wavelengths[1] - wavelengths[0]
+    transmission = FILTER.getTransmissionAtWavelength(wavelengths)
+    transmission /= wavelengths**2
+    transmission *= speedOfLight*luminosityAB/(angstrom*luminositySolar)
+    return romb(transmission,dx=deltaWavelength)        
+        
 
 def loadFilterFromFile(filterFile):
     FILTER = Filter()
