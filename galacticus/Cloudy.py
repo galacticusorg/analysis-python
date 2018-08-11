@@ -12,7 +12,17 @@ from . import rcParams
 
 
 class CloudyEmissionLine(object):
-    
+    """
+    CloudyEmissionLine(): Class to store emission line data as read from 
+                          the Cloudy HDF5 file.
+                          
+    Attributes:
+            name         -- Name of emission line
+            wavelength   -- Wavelength of emission line as computed by Cloudy.
+            luminosities -- 5-dimensional array storing luminosities for this 
+                            emission line as function of various interpolants.
+
+    """
     def __init__(self,name=None,wavelength=None,luminosities=None):
         self.name = name
         self.wavelength = wavelength
@@ -27,8 +37,9 @@ class CloudyEmissionLine(object):
 
 class CloudyTable(HDF5):
     """
-    CloudyTable: Class to read and interpolate over a table of luminosities output from CLOUDY. The 
-                 class assumes that the CLOUDY table is stored in a file with name 'emissionLines.hdf5'.
+    CloudyTable: Class to read and interpolate over a table of luminosities output from Cloudy. The 
+                 class assumes that by default the Cloudy table is stored in a file with name 
+                 'emissionLines.hdf5'. The name of the file can be modified using the rcParams.
 
     USAGE: CLOUDY = CloudyTable([verbose=False])
 
@@ -36,10 +47,14 @@ class CloudyTable(HDF5):
              verbose -- Print additional information. [Default=False]
 
          Functions:
+                   loadEmissionLine(): Load specified emission line from HDF5 file.
+                   loadEmissionLines(): Load all emission lines found in HDF5 file.                   
                    getInterpolant(): Extract values for specified interpolant.
+                   loadInterpolantsData(): Load all interpolants data stored in HDF5 file.
                    getWavelength(): Get rest wavelength of specified emission line.
                    reportLimits(): Report limits of interpolants.
-                   interpolate(): Interpolate the table of CLOUDY outputs for specified 
+                   prepareGalaxyData(): Zip galaxy data ready for interpolation.
+                   interpolate(): Interpolate the table of Cloudy outputs for specified 
                                   emission line.
     """
     def __init__(self,verbose=False):
@@ -64,6 +79,19 @@ class CloudyTable(HDF5):
         return
 
     def loadEmissionLine(self,line):
+        """
+        CloudyTable.loadEmissionLine(): Reads the emission line data from the Cloudy HDF5 file
+                                        and stores in the CloudyTable.lines dictionary. The 
+                                        information is stored as an instance of the 
+                                        'CloudyEmissionLine' class.
+
+        USAGE: CloudyTable.loadEmissionLine(line)
+
+            INPUT
+                line -- Name of emission line to read. If line cannot be found no new
+                        information will be added to CloudyTable.lines.
+                                        
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if line not in self.lsDatasets("/lines"):
             warnings.warn(funcname+"(): Emission line '"+line+"' not found in Cloudy output.")
@@ -75,13 +103,21 @@ class CloudyTable(HDF5):
         return
     
     def loadEmissionLines(self):
+        """
+        CloudyTable.loadEmissionLines(): Read all emission lines from Cloudy HDF5 file. All data
+                                         is stored in CloudyTable.lines dictionary as instances
+                                         of the 'CloudyEmissionLine' class.
+
+        USAGE: CloudyTable.loadEmissionLines()
+
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         [self.loadEmissionLine(l) for l in self.lsDatasets("/lines") if l not in self.lines.keys()]
         return
 
     def getInterpolant(self,interpolant):
         """
-        getInterpolant(): Return data for specified interpolant.
+        CloudyTable.getInterpolant(): Return data for specified interpolant.
 
         USAGE: data = CloudyTable().getInterpolant(interpolant)
 
@@ -102,16 +138,26 @@ class CloudyTable(HDF5):
         return np.log10(self.readDataset('/'+interpolant))
 
     def loadInterpolantsData(self):
-        #self.interpolantsData = tuple([np.log10(self.readDatasets('/',required=[name])[name]) \
-        #                             for name in self.interpolants])    
+        """
+        CloudyTable.loadInterpolantsData(): Load bin values for each of the interpolants into
+                                            CloudyTable.interpolantsData where data is stored
+                                            as tuple of Numpy arrays for input into 
+                                            CloudyTable.interpolate. To extract data as 
+                                            individual Numpy arrays use 
+                                            CloudyTable.getInterpolant.
+        
+        USAGE: CloudyTable.loadInterpolantsData()
+        
+        """
         self.interpolantsData = tuple([self.getInterpolant(name) for name in self.interpolants])            
         return
 
     def getWavelength(self,lineName):
         """
-        getWavelength(): Return rest wavelength for specified emission line. Note that the rest
-                         wavelength stored by CLOUDY may differ slihgtly from the true rest
-                         wavelength -- this may be due to rounding errors or a bug in CLOUDY.
+        CloudyTable.getWavelength(): Return rest wavelength for specified emission line. Note that 
+                                     the rest wavelength stored by CLOUDY may differ slihgtly from 
+                                     the true rest wavelength -- this may be due to rounding 
+                                     errors or a bug in CLOUDY.
 
         USAGE: data = CloudyTable().getWavelength(line)
 
@@ -132,7 +178,7 @@ class CloudyTable(HDF5):
 
     def reportLimits(self,data=None):
         """
-        reportLimits(): Print report of ranges for interpolants in CLOUDY table.
+        CloudyTable.reportLimits(): Print report of ranges for interpolants in CLOUDY table.
 
         USAGE: CloudyTable().reportLimits([data=None])
 
@@ -164,8 +210,9 @@ class CloudyTable(HDF5):
     def prepareGalaxyData(self,metallicity,densityHydrogen,ionizingFluxHydrogen,\
                         ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen):
         """
-        prepareGalaxyData(): Function to zip galaxy data ready for input into scipy.interpolate.interpn 
-                             (used to interpolate CLOUDY table).
+        CloudyTable.prepareGalaxyData(): Function to zip galaxy data ready for input into 
+                                         scipy.interpolate.interpn (used to interpolate over 
+                                         CLOUDY table).
 
         USAGE:  data = CloudyTable().prepareGalaxyData(metallicity,densityHydrogen,ionizingFluxHydrogen,\
                         ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
@@ -188,7 +235,7 @@ class CloudyTable(HDF5):
     def interpolate(self,lineName,metallicity,densityHydrogen,ionizingFluxHydrogen,\
                         ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen):
         """
-        interpolate(): Interpolate a table of CLOUDY output for specified emission line.
+        CloudyTable.interpolate(): Interpolate a table of CLOUDY output for specified emission line.
 
         USAGE:  luminosity = CloudyTable().interpolate(line,metallicity,densityHydrogen,ionizingFluxHydrogen,\
                                                        ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
