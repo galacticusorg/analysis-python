@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import sys,os
+import sys,os,fnmatch
 import numpy as np
 import unittest
 from .datasets import Dataset
@@ -27,7 +27,7 @@ class Totals(Property):
         Totals.matches(): Returns boolean to indicate whether this class can 
                           process the specified property.
 
-        USAGE: match =  Totals.matches(propertyName,[redshift=None])                                                                                                       
+        uSAGE: match =  Totals.matches(propertyName,[redshift=None])
         
           INPUTS 
               propertyName -- Name of property to process.
@@ -38,7 +38,11 @@ class Totals(Property):
                               this property.
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        return propertyName.startswith("total")
+        match = propertyName.startswith("total")
+        exemptOptions = ["totalMetallicity","totalMagnitude*"]
+        exempt = [fnmatch.fnmatch(propertyName,option) for option in exemptOptions]
+        match = match and not any(exempt)
+        return match
     
     def get(self,propertyName,redshift):
         """
@@ -115,6 +119,9 @@ class UnitTest(unittest.TestCase):
         self.assertTrue(self.TOTALS.matches("totalMassStellar",redshift))
         self.assertFalse(self.TOTALS.matches("diskMassStellar",redshift))
         self.assertFalse(self.TOTALS.matches("spheroidMassStellar",redshift))        
+        self.assertFalse(self.TOTALS.matches("totalMetallicity",redshift))
+        self.assertFalse(self.TOTALS.matches("totalMagnitudeAbsolute:SDSS_r:z1.000",redshift))        
+        self.assertFalse(self.TOTALS.matches("totalMagnitudeApparent:SDSS_r:z1.000",redshift))        
         print("TEST COMPLETE")
         print("\n")
         return
