@@ -7,10 +7,10 @@ from ..datasets import Dataset
 from ..properties.manager import Property
 from ..Cloudy import CloudyTable
 from ..filters import filterLuminosityAB
-from ..filters.filters import GalacticusFilters
+from ..filters.filters import GalacticusFilter
 from ..constants import massSolar,luminositySolar,metallicitySolar
 from ..constants import luminosityAB,erg
-from ..constants import arsec,angstrom
+from ..constants import parsec,angstrom
 from ..constants import mega,centi
 from ..constants import Pi,speedOfLight
 from ..constants import massAtomic,atomicMassHydrogen,massFractionHydrogen
@@ -24,7 +24,7 @@ class EmissionLineLuminosity(Property):
         self.galaxies = galaxies
         self.verbose = verbose
         self.CLOUDY = CloudyTable()
-        self.GALFIL = GalacticusFilters()
+        self.GALFIL = GalacticusFilter()
         return
     
     def parseDatasetName(self,datasetName):

@@ -44,7 +44,7 @@ class Metallicity(Property):
               
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        searchString = "^(?P<component>disk|spheroid|total)Metallicity$"
+        searchString = "^(?P<component>disk|spheroid|total)(?P<phase>Gas|Stellar)Metallicity$"
         return re.search(searchString,datasetName)
 
     def matches(self,propertyName,redshift=None):
@@ -76,7 +76,7 @@ class Metallicity(Property):
 
            INPUTS
                 propertyName -- Name of property to compute. This should be set 
-                                to '(disk|spheroid|total)Metallicty'.  
+                                to '(disk|spheroid|total)(Gas|Stellar)Metallicity'.  
                 redshift     -- Redshift value to query Galacticus HDF5 outputs.
 
            OUTPUT 
@@ -89,14 +89,15 @@ class Metallicity(Property):
             msg = funcname+"(): Specified property '"+propertyName+\
                 "' is not a metallicity."
             raise RuntimeError(msg)
-        # Extract gas mass and galaxy radius
-        gas = propertyName.replace("Metallicity","MassGas")
-        metals = propertyName.replace("Metallicity","AbundancesGasMetals")
-        GALS = self.galaxies.get(redshift,properties=[gas,metals])
+        # Extract  mass and metals abundance
+        MATCH = self.parseDatasetName(propertyName)
+        massName = MATCH.group('component')+"Mass"+MATCH.group('phase')
+        metalsName = MATCH.group('component')+"Abundances"+MATCH.group('phase')+"Metals"
+        GALS = self.galaxies.get(redshift,properties=[massName,metalsName])
         # Convert any zero values to NaN
-        mass = np.copy(GALS[gas].data)
+        mass = np.copy(GALS[massName].data)
         np.place(mass,mass==0.0,np.nan)
-        abundance = np.copy(GALS[metals].data)
+        abundance = np.copy(GALS[metalsName].data)
         np.place(abundance,abundance==0.0,np.nan)
         # Clear GALS from memory
         del GALS
@@ -146,7 +147,10 @@ class UnitTest(unittest.TestCase):
         print("UNIT TEST: Metallicity: "+funcname)
         print("Testing Metallicity.matches() function")
         for component in ["disk","spheroid","total"]:
-            self.assertTrue(self.METAL.matches(component+"Metallicity"))        
+            self.assertTrue(self.METAL.matches(component+"GasMetallicity"))        
+            self.assertTrue(self.METAL.matches(component+"StellarMetallicity"))        
+        self.assertFalse(self.METAL.matches("diskMetallicity"))
+        self.assertFalse(self.METAL.matches("totalMetallicity"))
         self.assertFalse(self.METAL.matches("diskAbundanceMetals"))
         self.assertFalse(self.METAL.matches("totalAbundanceMetals"))
         print("TEST COMPLETE")
@@ -160,23 +164,24 @@ class UnitTest(unittest.TestCase):
         redshift = 1.0
         self.assertRaises(RuntimeError,self.METAL.get,"aMissingProperty",redshift)
         for component in ["disk","spheroid","total"]:
-            DATA = self.METAL.get(component+"Metallicity",redshift)
-            self.assertEqual(DATA.name,component+"Metallicity")
-            OUT = self.METAL.galaxies.GH5Obj.selectOutput(redshift)
-            properties = [component+"MassGas",component+"AbundancesGasMetals"]
-            GALS = self.METAL.galaxies.get(redshift,properties=properties)
-            mass = np.copy(GALS[component+"MassGas"].data)
-            np.place(mass,mass==0.0,np.nan)
-            abundance = np.copy(GALS[component+"AbundancesGasMetals"].data)
-            np.place(abundance,abundance==0.0,np.nan)
-            metallicity = np.copy(np.log10(abundance/mass)) - np.log10(metallicitySolar)
-            for m,d in zip(metallicity,DATA.data):
-                self.assertFalse(np.isinf(d))
-                if np.isnan(m):
-                    self.assertTrue(np.isnan(d))
-                else:
-                    diff = np.fabs(m-d)
-                    self.assertLessEqual(diff,1.0e-6)
+            for phase in ["Gas","Stellar"]:
+                DATA = self.METAL.get(component+phase+"Metallicity",redshift)
+                self.assertEqual(DATA.name,component+phase+"Metallicity")
+                OUT = self.METAL.galaxies.GH5Obj.selectOutput(redshift)
+                properties = [component+"Mass"+phase,component+"Abundances"+phase+"Metals"]
+                GALS = self.METAL.galaxies.get(redshift,properties=properties)
+                mass = np.copy(GALS[component+"Mass"+phase].data)
+                np.place(mass,mass==0.0,np.nan)
+                abundance = np.copy(GALS[component+"Abundances"+phase+"Metals"].data)
+                np.place(abundance,abundance==0.0,np.nan)
+                metallicity = np.copy(np.log10(abundance/mass)) - np.log10(metallicitySolar)
+                for m,d in zip(metallicity,DATA.data):
+                    self.assertFalse(np.isinf(d))
+                    if np.isnan(m):
+                        self.assertTrue(np.isnan(d))
+                    else:
+                        diff = np.fabs(m-d)
+                        self.assertLessEqual(diff,1.0e-6)
         print("TEST COMPLETE")
         print("\n")
         return
