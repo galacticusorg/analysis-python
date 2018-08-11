@@ -1,10 +1,28 @@
 #! /usr/bin/env python
 
 import sys
+import fnmatch
 import numpy as np
+import unittest
+import warnings
 from scipy.interpolate import interpn
 from .data import GalacticusData
 from .fileFormats.hdf5 import HDF5
+from . import rcParams
+
+
+class CloudyEmissionLine(object):
+    
+    def __init__(self,name=None,wavelength=None,luminosities=None):
+        self.name = name
+        self.wavelength = wavelength
+        self.luminosities = luminosities
+        return
+
+    def reset(self):
+        self.name = None
+        self.wavelength = None
+        self.luminosities = None
 
 
 class CloudyTable(HDF5):
@@ -12,14 +30,11 @@ class CloudyTable(HDF5):
     CloudyTable: Class to read and interpolate over a table of luminosities output from CLOUDY. The 
                  class assumes that the CLOUDY table is stored in a file with name 'emissionLines.hdf5'.
 
-    USAGE: CLOUDY = CloudyTable([path=None],[verbose=False])
+    USAGE: CLOUDY = CloudyTable([verbose=False])
 
          INPUT 
-                path -- Path to datasets repository. If None, will search for path in environment 
-                        variables (stored as 'GALACTICUS_DATASETS'). [Default=None] 
              verbose -- Print additional information. [Default=False]
 
-             
          Functions:
                    getInterpolant(): Extract values for specified interpolant.
                    getWavelength(): Get rest wavelength of specified emission line.
@@ -27,35 +42,42 @@ class CloudyTable(HDF5):
                    interpolate(): Interpolate the table of CLOUDY outputs for specified 
                                   emission line.
     """
-    def __init__(self,path=None,verbose=False):
+    def __init__(self,verbose=False):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         # Set verbosity
         self.verbose = verbose
         # Locate table file
         DATA = GalacticusData(verbose=self.verbose)
-        cloudyFile = DATA.search("emissionLines.hdf5")        
+        fileName = rcParams.get("cloudy","fileName",fallback="emissionLines.hdf5")
+        cloudyFile = DATA.search(fileName)        
         # Initalise HDF5 class and open emissionLines.hdf5 file
-        super(cloudyTable, self).__init__(cloudyFile,'r')
+        super(CloudyTable, self).__init__(cloudyFile,'r')
         # Extract names and properties of lines
-        self.lines = list(map(str,self.fileObj["lines"].keys()))
+        self.lines = {}
         self.wavelengths = {}
         self.luminosities = {}
-        for l in self.lines:
-            self.wavelengths[l] = self.readAttributes("lines/"+l,required=["wavelength"])["wavelength"]
-            self.luminosities[l] = self.readDatasets('lines',required=[l])[l]        
         # Store interpolants
         self.interpolants = ["metallicity","densityHydrogen","ionizingFluxHydrogen",\
                                  "ionizingFluxHeliumToHydrogen","ionizingFluxOxygenToHydrogen"]
-        self.interpolantsData = ((np.log10(self.readDatasets('/',required=[name])[name]),) \
-                                     for name in self.interpolants)            
+        self.interpolantsData = None
         return
 
-
-    def _getInterpolantRange(self,interpolantName):
-        values = self.getInterpolant(interpolantName)
-        return values.min(),values.max()
-
+    def loadEmissionLine(self,line):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if line not in self.lsDatasets("/lines"):
+            warnings.warn(funcname+"(): Emission line '"+line+"' not found in Cloudy output.")
+            return 
+        LINE = CloudyEmissionLine(name=line)
+        LINE.wavelength = self.readAttributes("lines/"+line,required=["wavelength"])["wavelength"]
+        LINE.luminosities = self.readDataset('/lines/'+line)
+        self.lines[line] = LINE
+        return
+    
+    def loadEmissionLines(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        [self.loadEmissionLine(l) for l in self.lsDatasets("/lines") if l not in self.lines.keys()]
+        return
 
     def getInterpolant(self,interpolant):
         """
@@ -74,10 +96,16 @@ class CloudyTable(HDF5):
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if interpolant not in self.interpolants:
-            raise ValueError(funcname+"(): interpolant '"+interpolant+"'not recognised! Options are: "+\
-                                 ",".join(self.interpolants))
-        return np.log10(self.readDatasets('/',required=[interpolant])[interpolant])        
+            msg = funcname+"(): interpolant '"+interpolant+"'not recognised!"
+            msg = msg + " Options are: "+",".join(self.interpolants)
+            raise KeyError(msg)
+        return np.log10(self.readDataset('/'+interpolant))
 
+    def loadInterpolantsData(self):
+        #self.interpolantsData = tuple([np.log10(self.readDatasets('/',required=[name])[name]) \
+        #                             for name in self.interpolants])    
+        self.interpolantsData = tuple([self.getInterpolant(name) for name in self.interpolants])            
+        return
 
     def getWavelength(self,lineName):
         """
@@ -95,9 +123,11 @@ class CloudyTable(HDF5):
                  data -- Float value for rest wavelength.
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if lineName not in self.lines:
+        if lineName not in self.lsDatasets("/lines"):
             raise IndexError(funcname+"(): Line '"+lineName+"' not found!")
-        return self.wavelengths[lineName]
+        if lineName not in self.lines.keys():
+            self.loadEmissionLine(lineName)
+        return self.lines[lineName].wavelength
 
 
     def reportLimits(self,data=None):
@@ -114,17 +144,19 @@ class CloudyTable(HDF5):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if self.interpolantsData is None:
+            self.loadInterpolantsData()
         ndash = 40
         print("-"*ndash)
         print("CLOUDY Interpolation Report:")
         for i,name in enumerate(self.interpolants):
-            print("("+str(i)+1+") "+name)        
-            print("CLOUDY Range (min,max) = "+str(self.interpolantsData[i].min())+", "+\
+            print("("+str(i+1)+") "+name)        
+            print("  CLOUDY Range (min,max) = "+str(self.interpolantsData[i].min())+", "+\
                       str(self.interpolantsData[i].max()))
             if data is not None:        
                 if name in data.dtype.names:
-                    print("Galaxy Data (min,max,median) = "+str(data[i,:].min())+", "+str(data[i,:].max())\
-                              +", "+str(np.median(data[i,:])))
+                    print("  Galaxy Data (min,max,median) = "+str(data[i,:].min())+", "+\
+                              str(data[i,:].max())+", "+str(np.median(data[i,:])))
         print("-"*ndash)
         return
 
@@ -154,13 +186,12 @@ class CloudyTable(HDF5):
     
     
     def interpolate(self,lineName,metallicity,densityHydrogen,ionizingFluxHydrogen,\
-                        ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen,**kwargs):
+                        ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen):
         """
         interpolate(): Interpolate a table of CLOUDY output for specified emission line.
 
         USAGE:  luminosity = CloudyTable().interpolate(line,metallicity,densityHydrogen,ionizingFluxHydrogen,\
-                                                       ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen,\
-                                                       **kwargs)
+                                                       ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
                                                        
                INPUT
                     line                         -- Name of emission line. Available lines provided in 'lines'
@@ -170,7 +201,6 @@ class CloudyTable(HDF5):
                     ionizingFluxHydrogen         -- Numpy array of galaxy hydrogen ionizing flux.
                     ionizingFluxHeliumToHydrogen -- Numpy array of galaxy helium ionizing flux.
                     ionizingFluxOxygenToHydrogen -- Numpy array of galaxy oxygen ionizing flux.
-                    **kwargs                     -- Keyword arguments to pass to scipy.interpolate.interpn.
 
               OUTPUT
                     luminosity                   -- Numpy array of emission line luminosities.
@@ -178,17 +208,201 @@ class CloudyTable(HDF5):
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if lineName not in self.lines:
-            raise IndexError(funcname+"(): Line '"+lineName+"' not found!")
-        tableLuminosities = self.luminosities[lineName]
+            raise IndexError(funcname+"(): Line '"+lineName+"' not found!")        
+        if lineName not in self.lines.keys():
+            self.loadEmissionLine(lineName)
+        tableLuminosities = self.lines[lineName].luminosities
         galaxyData = self.prepareGalaxyData(metallicity,densityHydrogen,ionizingFluxHydrogen,\
-                                                ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
-        if "bounds_error" not in kwargs.keys():
-            kwargs["bounds_error"] = False
-        if "fill_value" not in kwargs.keys():
-            kwargs["fill_value"] = None
+                                                ionizingFluxHeliumToHydrogen,\
+                                                ionizingFluxOxygenToHydrogen)
+        bounds_error = rcParams.getboolean("cloudy","bounds_error",fallback=False)
+        method = rcParams.get("cloudy","method",fallback='linear')
+        fill_value = rcParams.get("cloudy","fill_value",fallback=None)
+        fill_value = str(fill_value)
+        if fnmatch.fnmatch(fill_value.lower(),"none"):
+            fill_value = None
+        elif fnmatch.fnmatch(fill_value.lower(),"nan"):            
+            fill_value = np.nan
+        else:
+            fill_value = float(fill_value)
         if self.verbose:
             self.reportLimits(data=galaxyData)
-        luminosities = interpn(self.interpolantsData,tableLuminosities,galaxyData,**kwargs)
+        if self.interpolantsData is None:
+            self.loadInterpolantsData()
+        luminosities = interpn(self.interpolantsData,tableLuminosities,galaxyData,\
+                                   method=method,bounds_error=bounds_error,\
+                                   fill_value=fill_value)
         return luminosities
     
+
+class UnitTest(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(self):
+        self.CLOUDY = CloudyTable()
+        return
+
+    @classmethod
+    def tearDownClass(self):
+        # Clear memory
+        self.CLOUDY.close()
+        del self.CLOUDY
+        return
+
+    def testLoadEmissionLine(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Cloudy: "+funcname)
+        print("Testing Cloudy.loadEmissionLine() function")
+        name = "balmerAlpha6563"
+        self.CLOUDY.loadEmissionLine(name)
+        self.assertTrue(name in self.CLOUDY.lines.keys())
+        LINE = self.CLOUDY.lines[name]
+        self.assertEqual(LINE.name,name)
+        wavelength = self.CLOUDY.readAttributes("lines/"+name,required=["wavelength"])["wavelength"]
+        self.assertEqual(wavelength,LINE.wavelength)
+        luminosities = self.CLOUDY.readDataset('/lines/'+name)        
+        self.assertEqual(luminosities.shape,LINE.luminosities.shape)
+        diff = np.fabs(luminosities-LINE.luminosities).flatten()
+        [self.assertLessEqual(d,1.0e-6) for d in diff]
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            badName = "notAnEmissionLine9999"
+            self.CLOUDY.loadEmissionLine(badName)
+            self.assertFalse(badName in self.CLOUDY.lines.keys())                
+        print("TEST COMPLETE")
+        print("\n")                
+        return
+
+    def testLoadEmissionLines(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Cloudy: "+funcname)
+        print("Testing Cloudy.loadEmissionLines() function")
+        self.CLOUDY.lines = {}
+        self.CLOUDY.loadEmissionLines()
+        lines = self.CLOUDY.lsDatasets("/lines")
+        self.assertEqual(len(lines),len(self.CLOUDY.lines.keys()))
+        [self.assertTrue(line in self.CLOUDY.lines.keys()) for line in lines]
+        [self.assertIsNotNone(self.CLOUDY.lines[l]) for l in lines]
+        print("TEST COMPLETE")
+        print("\n")
+        return
+    
+    def testGetWavelength(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Cloudy: "+funcname)
+        print("Testing Cloudy.getWavelength() function")
+        self.CLOUDY.loadEmissionLines()
+        for name in self.CLOUDY.lsDatasets("/lines"):
+            value = self.CLOUDY.lines[name].wavelength
+            wavelength = self.CLOUDY.getWavelength(name)
+            self.assertEqual(value,wavelength)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            badName = "notAnEmissionLine9999"
+            self.assertRaises(IndexError,self.CLOUDY.getWavelength,badName)
+        print("TEST COMPLETE")
+        print("\n")
+        return
+
+    
+    def testGetInterpolant(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Cloudy: "+funcname)
+        print("Testing Cloudy.getInterpolant() function")
+        for name in self.CLOUDY.interpolants:
+            data = self.CLOUDY.getInterpolant(name)
+            values = np.log10(self.CLOUDY.readDataset('/'+name))
+            diff = data - values
+            [self.assertLessEqual(d,1.0e-6) for d in diff]
+        self.assertRaises(KeyError,self.CLOUDY.getInterpolant,"someGas")
+        print("TEST COMPLETE")
+        print("\n")
+        return
+
+
+    def testLoadInterpolantsData(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Cloudy: "+funcname)
+        print("Testing Cloudy.loadInterpolantsData() function")
+        self.CLOUDY.interpolantsData = None
+        self.CLOUDY.loadInterpolantsData()
+        self.assertIsNotNone(self.CLOUDY.interpolantsData)
+        print("TEST COMPLETE")
+        print("\n")
+        return
+
+    def testPrepareGalaxyData(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Cloudy: "+funcname)
+        print("Testing Cloudy.prepareGalaxyData() function")
+        N = 1000
+        values = np.random.rand(N)
+        data = self.CLOUDY.prepareGalaxyData(values,values,values,values,values)
+        self.assertEqual(len(data),N)
+        self.assertEqual(len(data[0]),5)
+        self.assertRaises(TypeError,self.CLOUDY.prepareGalaxyData,values)
+        print("TEST COMPLETE")
+        print("\n")
+        return
+
+    def testInterpolate(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Cloudy: "+funcname)
+        print("Testing Cloudy.Interpolate() function")
+        # Test incorrect calling of function
+        badName= "notAnEmissionLine999"
+        N = 1000
+        metallicity = np.random.rand(N)
+        densityHydrogen = np.random.rand(N)
+        ionizingFluxHydrogen = np.random.rand(N)
+        ionizingFluxHeliumToHydrogen = np.random.rand(N)
+        ionizingFluxOxygenToHydrogen = np.random.rand(N)        
+        self.assertRaises(IndexError,self.CLOUDY.interpolate,badName,metallicity,\
+                              densityHydrogen,ionizingFluxHydrogen,\
+                              ionizingFluxHeliumToHydrogen,\
+                              ionizingFluxOxygenToHydrogen)    
+        name = "balmerAlpha6563"
+        self.assertRaises(TypeError,name,metallicity)
+        # Generate random data to test correct calling
+        i = self.CLOUDY.getInterpolant("metallicity")
+        diff = i.max() - i.min()
+        metallicity = np.random.rand(N)*diff + i.min()
+        i = self.CLOUDY.getInterpolant("densityHydrogen")
+        diff = i.max() - i.min()
+        densityHydrogen = np.random.rand(N)*diff + i.min()
+        i = self.CLOUDY.getInterpolant("ionizingFluxHydrogen")
+        diff = i.max() - i.min()
+        ionizingFluxHydrogen = np.random.rand(N)*diff + i.min()
+        i = self.CLOUDY.getInterpolant("ionizingFluxHeliumToHydrogen")
+        diff = i.max() - i.min()
+        ionizingFluxHeliumToHydrogen = np.random.rand(N)*diff + i.min()
+        i = self.CLOUDY.getInterpolant("ionizingFluxOxygenToHydrogen")
+        diff = i.max() - i.min()
+        ionizingFluxOxygenToHydrogen = np.random.rand(N)*diff + i.min()
+        # Test interpolation
+        luminosity = self.CLOUDY.interpolate(name,metallicity,\
+                                                 densityHydrogen,\
+                                                 ionizingFluxHydrogen,\
+                                                 ionizingFluxHeliumToHydrogen,\
+                                                 ionizingFluxOxygenToHydrogen)
+        self.assertIsInstance(luminosity,np.ndarray)
+        metallicity[0] *= 1000.0
+        rcParams.update("cloudy","fill_value","nan")
+        luminosity = self.CLOUDY.interpolate(name,metallicity,\
+                                                 densityHydrogen,\
+                                                 ionizingFluxHydrogen,\
+                                                 ionizingFluxHeliumToHydrogen,\
+                                                 ionizingFluxOxygenToHydrogen)
+        self.assertTrue(np.any(np.isnan(luminosity)))
+        rcParams.update("cloudy","bounds_error",True)
+        self.assertRaises(ValueError,self.CLOUDY.interpolate,name,metallicity,\
+                              densityHydrogen,ionizingFluxHydrogen,\
+                              ionizingFluxHeliumToHydrogen,\
+                              ionizingFluxOxygenToHydrogen)
+
+
+
+        print("TEST COMPLETE")
+        print("\n")
+        return
 
