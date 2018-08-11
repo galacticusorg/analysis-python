@@ -70,8 +70,6 @@ class CloudyTable(HDF5):
         super(CloudyTable, self).__init__(cloudyFile,'r')
         # Extract names and properties of lines
         self.lines = {}
-        self.wavelengths = {}
-        self.luminosities = {}
         # Store interpolants
         self.interpolants = ["metallicity","densityHydrogen","ionizingFluxHydrogen",\
                                  "ionizingFluxHeliumToHydrogen","ionizingFluxOxygenToHydrogen"]
