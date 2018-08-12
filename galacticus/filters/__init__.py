@@ -5,6 +5,7 @@ import sys,os
 import numpy as np
 import unittest
 import xml.etree.ElementTree as ET
+from scipy.stats import norm
 from scipy.integrate import romb
 from scipy.interpolate import interp1d
 from ..fileFormats.xmlTree import xmlTree
@@ -137,26 +138,25 @@ class Filter(object):
         TREE.writeToFile(outFile)
         return
 
-    def getTransmissionAtWavelength(self,wavelength):
+    def interpolate(self,wavelength):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        transmissionCurve = interp1d(self.transmission.wavelength,\
-                                         self.transmission.transmission,\
-                                         fill_value=0.0,bounds_error=False)
-        return transmissionCurve(wavelength)
+        TRANSMISSION = interp1d(self.transmission.wavelength,\
+                                    self.transmission.transmission,\
+                                    kind='cubic',\
+                                    fill_value=0.0,bounds_error=False)
+        return TRANSMISSION(wavelength)
 
-def filterLuminosityAB(FILTER):
-    # Integrate a zero-magnitude AB source under the filter
-    kRomb = 10
-    N = 2**kRomb+1
-    wavelengths = np.linspace(FILTER.transmission.wavelength[0],\
-                                  FILTER.transmisison.wavelength[-1],\
-                                  N)
-    deltaWavelength = wavelengths[1] - wavelengths[0]
-    transmission = FILTER.getTransmissionAtWavelength(wavelengths)
-    transmission /= wavelengths**2
-    transmission *= speedOfLight*luminosityAB/(angstrom*luminositySolar)
-    return romb(transmission,dx=deltaWavelength)        
-        
+    def integrate(self,kRomb=10):
+        # Integrate a zero-magnitude AB source under the filter
+        wavelengths = np.linspace(self.transmission.wavelength.min(),\
+                                  self.transmisison.wavelength.max(),\
+                                      2**kRomb+1)
+        deltaWavelength = wavelengths[1] - wavelengths[0]
+        transmission = FILTER.interpolate(wavelengths)
+        transmission /= wavelengths**2
+        transmission *= speedOfLight*luminosityAB/(angstrom*luminositySolar)
+        return romb(transmission,dx=deltaWavelength)                
+    
 
 def loadFilterFromFile(filterFile):
     FILTER = Filter()
@@ -164,22 +164,31 @@ def loadFilterFromFile(filterFile):
     return FILTER
 
 
+
 class UnitTest(unittest.TestCase):
 
     def testLoadFilter(self):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         print("UNIT TEST: Filter: "+funcname)
-        print("Creating a Filter() class instance")
+        print("Testing Filter.loadFromFile function")
+        # Create a Filter() class instance
         FILTER = Filter()
-        print("Testing loading a filter from a file")
+        # Attempt to load SDSS r-band from file
         DATA = GalacticusData(verbose=False)
         filterFile = DATA.search("SDSS_r.xml")
         FILTER.loadFromFile(filterFile)
+        # Check values stored
         self.assertIsNotNone(FILTER.name)
+        self.assertEqual(FILTER.name,"SDSS r")
         self.assertIsNotNone(FILTER.description)
         self.assertIsNotNone(FILTER.origin)
+        self.assertEqual(FILTER.origin,"Michael Blanton")
         self.assertIsNotNone(FILTER.effectiveWavelength)
+        diff = np.fabs(FILTER.effectiveWavelength-6198.41999837059)
+        self.assertLessEqual(diff,1.0e-6)
         self.assertIsNotNone(FILTER.vegaOffset)
+        diff = np.fabs(FILTER.vegaOffset--0.139302055718797)
+        self.assertLessEqual(diff,1.0e-6)
         self.assertIsNotNone(FILTER.transmission)
         print("TEST COMPLETE")
         print("\n")
@@ -187,24 +196,24 @@ class UnitTest(unittest.TestCase):
     def testCreateFilter(self):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         print("UNIT TEST: Filter: "+funcname)
-        print("Creating a Filter() class instance")
+        print("Testing creating a Filter() class instance")
         FILTER = Filter()
-        print(" Create an example Gaussian filter")
-        from scipy.stats import norm
+        # Create an example Gaussian filter
         loc = 6000.0
         scale = 500.0
-        print(" mean = "+str(loc)+" stdev = "+str(scale))
         GAUSS = norm(loc=loc,scale=scale)
         wave = np.linspace(4000,8000,200)
         trans = GAUSS.pdf(wave)
         trans /= trans.max()
-        print("Storing filter attributes")
+        # Store filter attributes")
         FILTER = Filter()
         FILTER.name = "GaussianFilter"
-        FILTER.description = "A Gaussian transmission curve centered on "+str(loc)+"A with width "+str(scale)+"A."
+        FILTER.description = "A Gaussian transmission curve centered on "+\
+            str(loc)+"A with width "+str(scale)+"A."
         FILTER.origin = "unitTestFilter function"
         FILTER.url = "None"
-        response = np.zeros(len(wave),dtype=[("wavelength",float),("transmission",float)]).view(np.recarray)
+        dtype = [("wavelength",float),("transmission",float)]
+        response = np.zeros(len(wave),dtype=dtype).view(np.recarray)
         response["wavelength"] = wave
         response["transmission"] = trans
         FILTER.transmission = response
@@ -217,21 +226,51 @@ class UnitTest(unittest.TestCase):
         print("TEST COMPLETE")
         print("\n")
 
+    def testInterpolateFilter(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Filter: "+funcname)
+        print("Testing Filter.interpolate() function")
+        # Create an example Gaussian filter
+        FILTER = Filter()
+        loc = 6000.0
+        scale = 500.0
+        GAUSS = norm(loc=loc,scale=scale)
+        wave = np.linspace(4000,8000,200)
+        trans = GAUSS.pdf(wave)
+        MAX = trans.max()
+        trans /= MAX
+        dtype = [("wavelength",float),("transmission",float)]
+        response = np.zeros(len(wave),dtype=dtype).view(np.recarray)
+        response["wavelength"] = wave
+        response["transmission"] = trans
+        FILTER.transmission = response
+        # Test interpolation
+        w = np.array([4001.,5657.,6932.,7998.])
+        values = GAUSS.pdf(w)/MAX
+        data = FILTER.interpolate(w)
+        diff = np.fabs(values-data)
+        [self.assertLessEqual(d,1.0e-6) for d in diff]
+        w = np.array([400.,3999.,8001.,99990.])
+        data = FILTER.interpolate(w)
+        [self.assertEqual(d,0.0) for d in data]
+        print("TEST COMPLETE")
+        print("\n")
+
+        
     def testWriteFilter(self):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         print("UNIT TEST: Filter: "+funcname)
-        print("Creating a Filter() class instance")
+        print("Testing Filter.writeToFile() function")
+        # Create Filter instance
         FILTER = Filter()
-        print(" Create an example Gaussian filter")
-        from scipy.stats import norm
+        # Create an example Gaussian filter
         loc = 6000.0
         scale = 500.0
-        print(" mean = "+str(loc)+" stdev = "+str(scale))
         GAUSS = norm(loc=loc,scale=scale)
         wave = np.linspace(4000,8000,200)
         trans = GAUSS.pdf(wave)
         trans /= trans.max()
-        print("Storing filter attributes")
+        # Store filter attributes
         FILTER = Filter()
         FILTER.name = "GaussianFilter"
         FILTER.description = "A Gaussian transmission curve centered on "+str(loc)+"A with width "+str(scale)+"A."
@@ -242,13 +281,13 @@ class UnitTest(unittest.TestCase):
         response["transmission"] = trans
         FILTER.transmission = response
         FILTER.setEffectiveWavelength()
-        print("Writing Gaussian filter to file")        
+        # Write Gaussian filter to file
         tmpfile = "gaussianFilter.xml"
         FILTER.writeToFile(tmpfile)
-        print("Re-reading Gaussian filter from file")
+        self.assertTrue(os.path.exists(tmpfile))
+        # Re-read Gaussian filter from file to check
         FILTER2 = Filter()
         FILTER2.loadFromFile(tmpfile)
-        print("Checking attributes read from file are consistent")
         for key in ["name","origin","url","description"]:
             self.assertEqual(FILTER.__dict__[key],FILTER2.__dict__[key])        
         self.assertTrue(np.fabs(FILTER.effectiveWavelength-FILTER2.effectiveWavelength)<1.0e-4)

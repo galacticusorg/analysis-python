@@ -138,10 +138,10 @@ class EmissionLineLuminosity(Property):
         if frame == "observed":            
             lineWavelength *= (1.0+GALS['redshift'].data)
         # Interpolate the transmission to the line wavelength
-        multiplier = FILTER.getTransmissionAtWavelength(lineWavelength)
+        multiplier = FILTER.interpolate(lineWavelength)
         # Compute the multiplicative factor to convert line
         # luminosity to luminosity in AB units in the filter
-        multiplier /= filterLuminosityAB(FILTER,k=10)
+        multiplier /= FILTER.integrate()
         # Correct multiplier for redshift
         if frame == "observed":
             multiplier /= (1.0+GALS["redshift"].data)
@@ -159,7 +159,7 @@ class EmissionLineLuminosity(Property):
         # i) Hydrogen gas density
         hydrogenGasDensity = self.getHydrogenGasDensity(redshift,MATCH.grooup('component'))
         # ii) Metallicity
-        metals = MATCH.group('component')+"Metallicity"
+        metals = MATCH.group('component')+"GasMetallicity"
         GALS = self.galaxies.get(redshift,properties=[metals])
         metallicity = np.copy(GALS[metals].data)
         del GALS
