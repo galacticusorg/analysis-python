@@ -149,10 +149,10 @@ class Filter(object):
     def integrate(self,kRomb=10):
         # Integrate a zero-magnitude AB source under the filter
         wavelengths = np.linspace(self.transmission.wavelength.min(),\
-                                  self.transmisison.wavelength.max(),\
+                                  self.transmission.wavelength.max(),\
                                       2**kRomb+1)
         deltaWavelength = wavelengths[1] - wavelengths[0]
-        transmission = FILTER.interpolate(wavelengths)
+        transmission = self.interpolate(wavelengths)
         transmission /= wavelengths**2
         transmission *= speedOfLight*luminosityAB/(angstrom*luminositySolar)
         return romb(transmission,dx=deltaWavelength)                
@@ -162,7 +162,6 @@ def loadFilterFromFile(filterFile):
     FILTER = Filter()
     FILTER.loadFromFile(filterFile)
     return FILTER
-
 
 
 class UnitTest(unittest.TestCase):
@@ -255,8 +254,39 @@ class UnitTest(unittest.TestCase):
         [self.assertEqual(d,0.0) for d in data]
         print("TEST COMPLETE")
         print("\n")
+        return
 
-        
+    def testIntegrateFilter(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Filter: "+funcname)
+        print("Testing Filter.integrate() function")
+        # Create an example Gaussian filter
+        FILTER = Filter()
+        loc = 6000.0
+        scale = 500.0
+        GAUSS = norm(loc=loc,scale=scale)
+        kRomb = 10
+        wave = np.linspace(4000.0,8000.0,2**kRomb+1)
+        trans = GAUSS.pdf(wave)
+        MAX = trans.max()
+        trans /= MAX
+        dtype = [("wavelength",float),("transmission",float)]
+        response = np.zeros(len(wave),dtype=dtype).view(np.recarray)
+        response["wavelength"] = wave
+        response["transmission"] = trans
+        FILTER.transmission = response
+        # Test integrate function
+        deltaWavelength = wave[1] - wave[0]
+        value = np.copy(trans)/wave**2
+        value *= speedOfLight*luminosityAB/(angstrom*luminositySolar)
+        result = romb(value,dx=deltaWavelength)                
+        data = FILTER.integrate(kRomb=kRomb)
+        diff = np.fabs(data-result)
+        self.assertLessEqual(diff,1.0e-6)
+        print("TEST COMPLETE")
+        print("\n")
+        return 
+                       
     def testWriteFilter(self):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         print("UNIT TEST: Filter: "+funcname)
