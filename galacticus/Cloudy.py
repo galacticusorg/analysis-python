@@ -47,6 +47,7 @@ class CloudyTable(HDF5):
              verbose -- Print additional information. [Default=False]
 
          Functions:
+                   listAvailableLines(): Lists all emission lines in HDF5 file.
                    loadEmissionLine(): Load specified emission line from HDF5 file.
                    loadEmissionLines(): Load all emission lines found in HDF5 file.                   
                    getInterpolant(): Extract values for specified interpolant.
@@ -76,6 +77,19 @@ class CloudyTable(HDF5):
         self.interpolantsData = None
         return
 
+    def listAvailableLines(self):
+        """
+        CloudyTable.listAvailableLines(): Lists all emission lines that are available in the
+                                          CLOUDY HDF5 output file.
+
+        USAGE:  lines = CloudyTable.listAvailableLines()
+
+         
+           OUTPUTS
+                lines -- List of available emission lines.
+        """
+        return self.lsDatasets("/lines")
+    
     def loadEmissionLine(self,line):
         """
         CloudyTable.loadEmissionLine(): Reads the emission line data from the Cloudy HDF5 file
@@ -294,6 +308,17 @@ class UnitTest(unittest.TestCase):
         del self.CLOUDY
         return
 
+    def testListAvailableLines(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Cloudy: "+funcname)
+        print("Testing Cloudy.listAvailableLines() function")
+        allLines = self.CLOUDY.lsDatasets("/lines")
+        found = self.CLOUDY.listAvailableLines()
+        self.assertEqual(allLines,found)
+        print("TEST COMPLETE")
+        print("\n")                
+        return
+        
     def testLoadEmissionLine(self):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         print("UNIT TEST: Cloudy: "+funcname)

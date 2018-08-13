@@ -6,7 +6,6 @@ import unittest
 from ..datasets import Dataset
 from ..properties.manager import Property
 from ..Cloudy import CloudyTable
-from ..filters import filterLuminosityAB
 from ..filters.filters import GalacticusFilter
 from ..constants import massSolar,luminositySolar,metallicitySolar
 from ..constants import luminosityAB,erg
@@ -26,7 +25,10 @@ class EmissionLineLuminosity(Property):
         self.CLOUDY = CloudyTable()
         self.GALFIL = GalacticusFilter()
         return
-    
+
+    def lineInCloudyOutput(self,lineName):
+        return lineName in self.CLOUDY.listAvailableLines()
+
     def parseDatasetName(self,datasetName):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         # Extract dataset name information
@@ -193,3 +195,39 @@ class EmissionLineLuminosity(Property):
         DATA.data *= (luminosityMultiplier*numberHIIRegion*erg/luminositySolar)
         return DATA
 
+
+
+class UnitTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(self):
+        from .galaxies import Galaxies
+        from .io import GalacticusHDF5
+        from .data import GalacticusData
+        from shutil import copyfile
+        # Locate the dynamic version of the galacticus.snapshotExample.hdf5 file.
+        DATA = GalacticusData()
+        self.snapshotFile = DATA.searchDynamic("galacticus.snapshotExample.hdf5")
+        self.removeExample = False
+        # If the file does not exist, create a copy from the static version.
+        if self.snapshotFile is None:
+            self.snapshotFile = DATA.dynamic+"/examples/galacticus.snapshotExample.hdf5"
+            self.removeExample = True
+            if not os.path.exists(DATA.dynamic+"/examples"):
+                os.makedirs(DATA.dynamic+"/examples")
+            copyfile(DATA.static+"/examples/galacticus.snapshotExample.hdf5",self.snapshotFile)
+        # Initialize the IonizingContinuum class.
+        GH5 = GalacticusHDF5(self.snapshotFile,'r')
+        GALS = Galaxies(GH5Obj=GH5)
+        self.ION = IonizingContinuum(GALS)
+        # Create a list of incorrect names that will be rejected
+        self._incorrectNames = [\
+            "basicMass",\
+                "totalOxygenContinuumLuminosity:z1.000",\
+                "diskPlutoniumContinuumLuminosity:z1.000",\
+                "diskOxygenContinuumLuminosity",\
+                "diskOxygenContinuumLuminosity:1.000",\
+                "diskOxygenContinuumLuminosityz1.000",\
+                "diskOxygenContinuumLuminosity:recent"\
+                ]
+        return
