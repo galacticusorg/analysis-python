@@ -16,6 +16,15 @@ from ..constants import mega,centi
 from ..constants import Pi,speedOfLight
 from ..constants import massAtomic,atomicMassHydrogen,massFractionHydrogen
 
+
+def ergPerSecond(luminosity):
+    luminosity = np.log10(luminosity)
+    luminosity += np.log10(luminositySolar)
+    luminosity -= np.log10(erg)
+    luminosity = 10.0**luminosity
+    return luminosity
+
+
 @Property.register_subclass('emissionLineLuminosity')
 class EmissionLineLuminosity(Property):
     
@@ -367,6 +376,22 @@ class EmissionLineLuminosity(Property):
         return multiplier
 
     def get(self,propertyName,redshift):
+        """
+        EmissionLineLuminosity.get(): Compute specified emission line luminosity at specified
+                                      redshift. 
+
+        USAGE: DATA = EmissionLineLuminosity.get(propertyName,redshift)
+
+           INPUTS
+               propertyName -- Property name to compute luminosity for. Should be a
+                               valid emission line luminosity dataset name.
+               redshift     -- Redshift value to query Galacticus HDF5 outputs.
+        
+           OUTPUTS
+               DATA         -- Dataset() class instance containing luminosity information, or
+                               None if line luminosity cannot be computed.
+        
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.matches(propertyName,raiseError=True)
         # Extract information from property name
@@ -374,7 +399,7 @@ class EmissionLineLuminosity(Property):
         # Get continuum luminosity names
         LymanName,HeliumName,OxygenName = self.getContinuumLuminosityNames(propertyName)
         # Extract continuum luminosities
-        FLUXES = self.getContinuumLuminosities(propertyName)
+        FLUXES = self.getContinuumLuminosities(propertyName,redshift)
         # If any luminosities are missing, unable to compute emission lines so return 'None' instance.
         if any([FLUXES[name] is None for name in FLUXES.keys()]):
             warnings.warn(funcname+"(): Unable to compute emission line luminosity as one of the "+\
@@ -389,7 +414,7 @@ class EmissionLineLuminosity(Property):
         metallicity = np.copy(GALS[metals].data)
         del GALS
         # iii) Ionizing Hydrogen flux
-        ionizingFluxHydrogen = self.getIonizingFluxHydrogen(FLUXES[LymanName].data,redshift)
+        ionizingFluxHydrogen = self.getIonizingFluxHydrogen(FLUXES[LymanName].data)
         #      Convert the hydrogen ionizing luminosity to be per HII region
         numberHIIRegion = self.getNumberHIIRegions(redshift,MATCH.group('component'))
         np.place(numberHIIRegion,numberHIIRegion==0.0,np.nan)
@@ -404,14 +429,14 @@ class EmissionLineLuminosity(Property):
         attr["lifetimeHIIRegion"] = self.getLifetimeHIIRegions()
         DATA.attr = attr
         # Pass properties to CloudyTable() class for interpolation        
-        DATA.data = np.copy(self.CLOUDY.interpolate(MATCH.group("lineName"),metallicity,densityHydrogen,\
+        DATA.data = np.copy(self.CLOUDY.interpolate(MATCH.group("lineName"),metallicity,hydrogenGasDensity,\
                                                         ionizingFluxHydrogen,ionizingFluxHeliumToHydrogen,\
                                                         ionizingFluxOxygenToHydrogen))
         # Clear memory
-        del metallicity,densityHydrogen,ionizingFluxHydrogen
+        del metallicity,hydrogenGasDensity,ionizingFluxHydrogen
         del ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen
         # Get luminosity multiplier
-        luminosityMultiplier = self.getLuminosityMultiplier()
+        luminosityMultiplier = self.getLuminosityMultiplier(propertyName,redshift)
         # Convert units of luminosity 
         DATA.data *= (luminosityMultiplier*numberHIIRegion*erg/luminositySolar)
         return DATA
@@ -701,3 +726,23 @@ class UnitTest(unittest.TestCase):
         print("TEST COMPLETE")
         print("\n")
         return            
+
+
+    def testGet(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Emission Line Luminosity: "+funcname)
+        print("Testing EmissionLineLuminosity.get() function")
+        redshift = 1.0
+        zStr = self.LINES.galaxies.GH5Obj.getRedshiftString(redshift)
+        for line in self.LINES.CLOUDY.listAvailableLines():            
+            name = "diskLineLuminosity:"+line+":rest:"+zStr
+            DATA = self.LINES.get(name,redshift)
+            self.assertIsNotNone(DATA)
+            self.assertEqual(DATA.name,name)
+            self.assertIsNotNone(DATA.data)
+            self.assertIsInstance(DATA.data,np.ndarray)
+        print("TEST COMPLETE")
+        print("\n")
+        return            
+        
+    

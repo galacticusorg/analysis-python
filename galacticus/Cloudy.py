@@ -266,8 +266,6 @@ class CloudyTable(HDF5):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if lineName not in self.lines:
-            raise IndexError(funcname+"(): Line '"+lineName+"' not found!")        
         if lineName not in self.lines.keys():
             self.loadEmissionLine(lineName)
         tableLuminosities = self.lines[lineName].luminosities
