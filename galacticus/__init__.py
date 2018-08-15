@@ -74,9 +74,5 @@ class rcConfig(ConfigParser):
 
 rcParams = rcConfig()
 rcParams()
-#for path in ["GALACTICUS_EXEC_PATH","GALACTICUS_DATA_PATH"]:
-#    if path in os.environ.keys():
-#        rcParams.update("paths",path,os.environ[path])
-
     
 
