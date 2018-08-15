@@ -5,13 +5,13 @@ import re
 import numpy as np
 import scipy.interpolate
 import h5py
-from . import rcParams
-from .datasets import Dataset
-from .properties.manager import Property
-from .constants import megaParsec, massSolar, centi, milli
-from .filters import Filter
-from .filters.filters import GalacticusFilter
-from .data import GalacticusData
+from .. import rcParams
+from ..datasets import Dataset
+from ..properties.manager import Property
+from ..constants import megaParsec, massSolar, centi, milli
+from ..filters import Filter
+from ..filters.filters import GalacticusFilter
+from ..data import GalacticusData
 
 
 @Property.register_subclass('dustCompendium')

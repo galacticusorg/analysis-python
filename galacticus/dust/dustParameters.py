@@ -3,9 +3,9 @@
 import sys
 import re
 import numpy as np
-from . import rcParams
-from .datasets import Dataset
-from .properties.manager import Property
+from .. import rcParams
+from ..datasets import Dataset
+from ..properties.manager import Property
 
 @Property.register_subclass('dustParameters')
 class DustParameters(Property):
