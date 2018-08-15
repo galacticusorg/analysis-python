@@ -126,6 +126,6 @@ class DustScreen(Property):
         # Attenuate luminosity
         DATA.data *= atten
         return DATA
-        
-
+            
+    
 
