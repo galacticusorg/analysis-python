@@ -9,5 +9,6 @@ from ..metallicity import Metallicity
 from ..inclination import Inclination
 from ..ionizingContinuua import IonizingContinuum
 from ..emissionLines.luminosities import EmissionLineLuminosity
-from ..dustCompendium import DustCompendium
-from ..dustParameters import DustParameters
+from ..dust.dustCompendium import DustCompendium
+from ..dust.dustParameters import DustParameters
+from ..dust.dustScreens import DustScreen

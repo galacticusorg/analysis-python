@@ -130,7 +130,7 @@ class DustCompendium(Property):
         columnDensityMetals[viable] = properties['diskAbundancesGasMetals'].data[viable]/2.0/np.pi/properties['diskRadius'].data[viable]**2
         # Get the dust-to-metals ratio. If noe is provided we use a default of 0.44 which is approximately correct for the Milky
         # Way (e.g. Popping et al.; 2017; http://adsabs.harvard.edu/abs/2017MNRAS.471.3152P).
-        dustToMetalsRatio   = rcParams.getboolean("dustCompendium","dustToMetalsRatio",fallback=0.44)
+        dustToMetalsRatio   = rcParams.getfloat("dustCompendium","dustToMetalsRatio",fallback=0.44)
         # Find column density of dust through center of disks [Msolar/Mpc^2].
         columnDensityDust   = columnDensityMetals*dustToMetalsRatio
         # Construct central V-band optical depths. Decompose to dimensionless units, and extract the values.
