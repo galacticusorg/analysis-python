@@ -34,6 +34,13 @@ class rcConfig(ConfigParser):
         self.file = configFile
         return
 
+    def __call__(self):
+        for path in ["GALACTICUS_EXEC_PATH","GALACTICUS_DATA_PATH"]:
+            if path in os.environ.keys():
+                self.update("paths",path,os.environ[path])
+        return
+
+
     def update(self,section,parameter,value):
         """
         rcConfig.update: Updates the parameter in the specified section of the configuration file
@@ -53,10 +60,23 @@ class rcConfig(ConfigParser):
         self.set(section,parameter,str(value))
         return
 
+    def restore(self):
+        """
+        rcConfig.restore: Restore default parameters by re-reading the configuration file.
+
+        USAGE: rcConfig.restore()
+
+        """
+        self.read(self.file)
+        self.__call__()
+        return
+        
+
 rcParams = rcConfig()
-for path in ["GALACTICUS_EXEC_PATH","GALACTICUS_DATA_PATH"]:
-    if path in os.environ.keys():
-        rcParams.update("paths",path,os.environ[path])
+rcParams()
+#for path in ["GALACTICUS_EXEC_PATH","GALACTICUS_DATA_PATH"]:
+#    if path in os.environ.keys():
+#        rcParams.update("paths",path,os.environ[path])
 
     
 

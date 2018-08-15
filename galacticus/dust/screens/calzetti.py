@@ -42,11 +42,9 @@ class UnitTest(unittest.TestCase):
         DUST = Calzetti()
         self.assertEqual(DUST.attrs["Rv"],4.06)
         self.assertIsNotNone(DUST.curve)        
-        self.assertTrue(type(DUST.curve(0.01)),float)
-        self.assertTrue(type(DUST.curve(0.12)),float)
-        self.assertTrue(type(DUST.curve(1.0)),float)
-        self.assertTrue(type(DUST.curve(2.2)),float)
-        self.assertTrue(type(DUST.curve(5.0)),float)
+        wavelengths = np.array([0.01,0.12,1.0,2.2,5.0])
+        self.assertTrue(type(DUST.curve(wavelengths)),np.ndarray)
+        [self.assertTrue(type(DUST.curve(w)),float) for w in wavelengths]
         print("TEST COMPLETE")
         print("\n")
         return

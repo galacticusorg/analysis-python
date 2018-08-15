@@ -109,6 +109,7 @@ class UnitTest(unittest.TestCase):
         del self.ION
         if self.removeExample:
             os.remove(self.snapshotFile)
+        rcParams.restore()
         return
 
     def testFilterNames(self):

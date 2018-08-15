@@ -20,7 +20,7 @@ class DustScreen(Property):
         self.galaxies = galaxies
         self.SCREENS = ScreenLaw()
         self.CLOUDY = CloudyTable()
-        self.GALFIL = GalacticusFilters()
+        self.GALFIL = GalacticusFilter()
         return
 
     def parseDatasetName(self,propertyName):

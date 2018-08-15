@@ -304,6 +304,7 @@ class UnitTest(unittest.TestCase):
         # Clear memory
         self.CLOUDY.close()
         del self.CLOUDY
+        rcParams.restore()
         return
 
     def testListAvailableLines(self):
@@ -425,7 +426,7 @@ class UnitTest(unittest.TestCase):
         ionizingFluxHydrogen = np.random.rand(N)
         ionizingFluxHeliumToHydrogen = np.random.rand(N)
         ionizingFluxOxygenToHydrogen = np.random.rand(N)        
-        self.assertRaises(IndexError,self.CLOUDY.interpolate,badName,metallicity,\
+        self.assertRaises(KeyError,self.CLOUDY.interpolate,badName,metallicity,\
                               densityHydrogen,ionizingFluxHydrogen,\
                               ionizingFluxHeliumToHydrogen,\
                               ionizingFluxOxygenToHydrogen)    

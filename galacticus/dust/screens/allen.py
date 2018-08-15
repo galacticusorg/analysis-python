@@ -29,11 +29,9 @@ class UnitTest(unittest.TestCase):
         DUST = Allen()
         self.assertEqual(DUST.attrs["Rv"],3.09)
         self.assertIsNotNone(DUST.curve)
-        self.assertTrue(type(DUST.curve(0.01)),float)
-        self.assertTrue(type(DUST.curve(0.1)),float)
-        self.assertTrue(type(DUST.curve(0.2)),float)
-        self.assertTrue(type(DUST.curve(0.3)),float)
-        self.assertTrue(type(DUST.curve(1.0)),float)
+        wavelengths = np.array([0.01,0.1,3.0,10.0,20.0])
+        self.assertTrue(type(DUST.curve(wavelengths)),np.ndarray)
+        [self.assertTrue(type(DUST.curve(w)),float) for w in wavelengths]
         print("TEST COMPLETE")
         print("\n")
         return
