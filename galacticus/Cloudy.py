@@ -304,7 +304,7 @@ class UnitTest(unittest.TestCase):
         # Clear memory
         self.CLOUDY.close()
         del self.CLOUDY
-        rcParams.restore()
+        rcParams.reset()
         return
 
     def testListAvailableLines(self):

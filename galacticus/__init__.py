@@ -60,11 +60,11 @@ class rcConfig(ConfigParser):
         self.set(section,parameter,str(value))
         return
 
-    def restore(self):
+    def reset(self):
         """
-        rcConfig.restore: Restore default parameters by re-reading the configuration file.
+        rcConfig.reset: Restore default parameters by re-reading the configuration file.
 
-        USAGE: rcConfig.restore()
+        USAGE: rcConfig.reset()
 
         """
         self.read(self.file)
