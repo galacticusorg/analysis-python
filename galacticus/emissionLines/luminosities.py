@@ -323,7 +323,7 @@ class EmissionLineLuminosity(Property):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        self.matches(propertyName,raiseError=True)
+        assert(self.matches(propertyName,raiseError=True))
         # Extract information from property name
         MATCH = self.parseDatasetName(propertyName)
         # Check if filter name provided
@@ -393,7 +393,7 @@ class EmissionLineLuminosity(Property):
         
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        self.matches(propertyName,raiseError=True)
+        assert(self.matches(propertyName,raiseError=True))
         # Extract information from property name
         MATCH = self.parseDatasetName(propertyName)        
         # Get continuum luminosity names
