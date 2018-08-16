@@ -182,6 +182,19 @@ class DustScreen(Property):
         return float(wavelength)
 
     def getAv(self,propertyName,redshift):
+        """
+        DustScreen.getAv(): Return V-band attenuation parameter.
+
+        USAGE: AV = DustScreen.getAv(propertyName,redshift)
+        
+          INPUTS
+             propertyName -- Name of dust attenuated dataset.
+             redshift     -- Redshift value to query Galacticus HDF5 file.
+        
+          OUTPUTS
+             AV           -- Numpy array of V-band attenuations.
+
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         assert(self.matches(propertyName,raiseError=True))
         MATCH = self.parseDatasetName(propertyName)
@@ -196,6 +209,21 @@ class DustScreen(Property):
         return AV
 
     def get(self,propertyName,redshift):
+        """
+        DustScreen.get(): Compute dust attenuated luminosity.
+
+        USAGE: DATA = DustScreen.get(propertyName,redshift)
+        
+          INPUTS
+             propertyName -- Name of dust attenuated dataset.
+             redshift     -- Redshift value to query Galacticus HDF5 file.
+        
+          OUTPUTS
+             DATA         -- Dataset() class instance containing attenuated
+                             luminosity information, or None instance if
+                             attenuated luminosity could not be computed.
+
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         assert(self.matches(propertyName,raiseError=True))
         MATCH = self.parseDatasetName(propertyName)
@@ -379,6 +407,30 @@ class UnitTest(unittest.TestCase):
             self.assertEqual(OBJ.__name__,screen)
         self.assertRaises(KeyError,self.DUST.selectDustScreen,"Clazeti")
         self.assertRaises(KeyError,self.DUST.selectDustScreen,"Compendium")        
+        print("TEST COMPLETE")
+        print("\n")
+        return
+
+    def testGetWavelength(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: Dust Screens: "+funcname)
+        print("Testing DustScreen.getWavelength() function")
+        FILTER = self.DUST.GALFIL.load("SDSS_r")
+        name = "diskLuminositiesStellar:SDSS_r:rest:z1.000:dustCalzetti"
+        self.assertEqual(FILTER.effectiveWavelength,self.DUST.getWavelength(name))
+        name = "diskLineLuminosity:balmerAlpha6563:rest:SDSS_r:z1.000:dustCalzetti"
+        self.assertEqual(FILTER.effectiveWavelength,self.DUST.getWavelength(name))
+        name = "diskLineLuminosity:balmerAlpha6563:rest:z1.000:dustCalzetti"
+        self.assertEqual(self.DUST.CLOUDY.getWavelength("balmerAlpha6563"),\
+                             self.DUST.getWavelength(name))
+        name = "totalLineLuminositiy:balmerAlpha6563:rest:z1.000:dustCalzetti"
+        self.assertRaises(RuntimeError,self.DUST.getWavelength,name)
+        name = "totalLuminositiesStellar:SDSS_g:rest:z1.000:dustClazeti"
+        self.assertRaises(RuntimeError,self.DUST.getWavelength,name)
+        name = "totalLuminositiesStellar:SDSS_g:rest:z1.000:dustCompendium"
+        self.assertRaises(RuntimeError,self.DUST.getWavelength,name)
+        name = "totalLuminositiesStellar:SDSS_g:rest:z1.000:dustCalzetti_Av"
+        self.assertRaises(RuntimeError,self.DUST.getWavelength,name)
         print("TEST COMPLETE")
         print("\n")
         return
