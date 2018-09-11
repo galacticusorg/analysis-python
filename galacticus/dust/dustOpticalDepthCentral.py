@@ -138,8 +138,24 @@ class DustOpticalDepthCentral(Property):
         return opacity
 
     def get(self,propertyName,redshift):
+        """
+        DustOpticalDepthCentral.get(): Return the dust optical depth through the center of the
+                                       galactic disk.
+        
+        USAGE:  DATA = DustOpticalDepthCentral.get(propertyName,redshift)
+
+            INPUTS
+               propertyName -- Name of property to compute. This should be set to 
+                               'diskDustOpticalDepthCentral:dust(Atlas|Compendium)'.
+               redshift     -- Redshift value to query Galacticus HDF5 outputs.                                                                                                
+        
+            OUTPUT
+               DATA         -- Instance of galacticus.datasets.Dataset() class                                                                                                 
+                               containing computed galaxy information.    
+        
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        assert(self.matches(propertyName))
+        assert(self.matches(propertyName,raiseError=True))
         MATCH = self.parseDatasetName(propertyName)
         # Get column density for metals
         columnDensityMetals = self.computeColumnDensityMetals(redshift)               
@@ -255,3 +271,23 @@ class UnitTest(unittest.TestCase):
         print("TEST COMPLETE")
         print("\n")
         return        
+
+    def testGet(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("UNIT TEST: DustOpticalDepthCentral: "+funcname)
+        print("Testing  DustOpticalDepthCentral.getOpacity() function")
+        for dust in ["Atlas","Compendium"]:
+            name = "diskDustOpticalDepthCentral:dust"+dust
+            DATA = self.DEPTH.get(name,1.0)
+            self.assertEqual(DATA.name,name)
+            self.assertEqual(type(DATA.data),np.ndarray)
+        for name in ["spheroidDustOpticalDepthCentral:dustAtlas",
+                     "diskDustOpticalDepthCentral:dustAltas",
+                     "diskDustOpticalDepthCentral:dustAtlasClouds",
+                     "diskDustOpticalDepthCentral:dust"
+                     ]:            
+            self.assertRaises(RuntimeError,self.DEPTH.get,name,1.0)
+        print("TEST COMPLETE")
+        print("\n")
+        return
+
