@@ -12,7 +12,9 @@ from ..constants import megaParsec, massSolar, centi, milli
 from ..filters import Filter
 from ..filters.filters import GalacticusFilter
 from ..data import GalacticusData
+from .CompendiumTable import CompendiumTable
 
+COMPENDIUM = CompendiumTable()
 
 @Property.register_subclass('dustCompendium')
 class DustCompendium(Property):
@@ -35,7 +37,42 @@ class DustCompendium(Property):
         self.tablesLoaded = False
         return
 
-    def matches(self,propertyName,redshift=None):
+    def parseDatasetName(self,propertyName):
+        """
+        DustCompendium.parseDatasetName: Parse a dust parameters dataset.
+
+        USAGE: SEARCH = DustCompendium.parseDatasetName(propertyName)
+
+             INPUTS 
+                propertyName -- Property name to parse.
+
+             OUTPUTS
+                SEARCH       -- Regex search (re.search) object or None if
+                                propertyName cannot be parsed.
+
+        """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        dustRegex = "(?P<dust>:dustCompendium)"
+        # Check for stellar luminosity
+        searchString = "^(?P<component>disk|spheroid)LuminositiesStellar:"+\
+            "(?P<filterName>[^:]+)(?P<frame>:[^:]+)"+\
+            "(?P<redshiftString>:z(?P<redshift>[\d\.]+))"+\
+            dustRegex+"(?P<recent>:recent)?$"
+        MATCH = re.search(searchString,propertyName)
+        if MATCH is not None:
+            return MATCH
+        # Check for emission line luminosity
+        searchString = "^(?P<component>disk|spheroid)LineLuminosity:"+\
+            "(?P<lineName>[^:]+)(?P<frame>:[^:]+)(?P<filterName>:[^:]+)?"+\
+            "(?P<redshiftString>:z(?P<redshift>[\d\.]+))"+\
+            dustRegex+"(?P<recent>:recent)?$"
+        MATCH = re.search(searchString,propertyName)
+        if MATCH is not None:
+            return MATCH
+        return None
+
+    
+    def matches(self,propertyName,redshift=None,raiseError=False):
         """
         DustCompendium.matches(): Returns boolean to indicate whether this class can process
                                  the specified property.
@@ -52,8 +89,35 @@ class DustCompendium(Property):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        isMatched = re.search(self.dustCompendiumRegEx,propertyName) or propertyName == "tauV0:dustCompendium"
-        return isMatched        
+        if propertyName == "tauV0:dustCompendium":
+            return True
+        MATCH = self.parseDatasetName(propertyName)
+        if MATCH is not None:
+            return True
+        if raiseError:
+            msg = funcname+"(): Specified property '"+propertyName+\
+                "' is not a valid dust compendium property."
+            raise RuntimeError(msg)
+        return False
+
+
+    
+    def computeColumnDensityMetals(self,redshift):
+        PROPS = self.galaxies.get(redshift,properties=["diskAbundancesGasMetals","diskRadius"])
+        columnDensityMetals = np.ones_like(PROPS['diskAbundancesGasMetals'].data)*np.nan
+        mask = PROPS['diskRadius'] > 0.0
+        columnDensityMetals[viable] = np.copy(PROPS['diskAbundancesGasMetals'].data[mask])
+        columnDensityMetals[viable] /= (2.0*Pi*np.copy(PROPS['diskRadius'].data[mask])**2)
+        return columnDensityMetals
+        
+
+
+
+
+
+
+
+
 
     def get(self,propertyName,redshift):        
         """

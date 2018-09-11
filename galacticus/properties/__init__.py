@@ -12,3 +12,4 @@ from ..emissionLines.luminosities import EmissionLineLuminosity
 from ..dust.dustCompendium import DustCompendium
 from ..dust.dustParameters import DustParameters
 from ..dust.dustScreens import DustScreen
+from ..dust.dustOpticalDepthCentral import DustOpticalDepthCentral

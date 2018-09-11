@@ -45,6 +45,21 @@ class CompendiumTable(object):
         self.extrapolator1 = None
         return
 
+    def tablesLoaded(self):
+        notloaded = any([self.wavelengthTable is None,self.inclinationTable is None,\
+                             self.opticalDepthTable is None,self.spheroidScaleRadialTable is None,\
+                             self.attenuationDiskTable is None,self.attenuationSpheroidTable is None,\
+                             self.extrapolationDiskTable is None,self.extrapolationSpheroidTable is None])
+        return np.invert(notloaded)
+        
+    
+    def loadOpacity(self):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        FILE = HDF5(self.file,'r')
+        self.opacity = copy.copy(FILE.readAttributes("/",required=["opacity"])['opacity'])
+        FILE.close()
+        return
+
     def load(self):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         FILE = HDF5(self.file,'r')
@@ -56,7 +71,7 @@ class CompendiumTable(object):
         self.attenuationSpheroidTable   = np.copy(FILE.readDataset('/attenuationSpheroid'              ))
         self.extrapolationDiskTable     = np.copy(FILE.readDataset('/extrapolationCoefficientsDisk'    ))
         self.extrapolationSpheroidTable = np.copy(FILE.readDataset('/extrapolationCoefficientsSpheroid'))
-        self.opacity                    = copy.copy(FILE.readAttributes("/",required=["opacity"])['opacity'])
+        self.opacity = copy.copy(FILE.readAttributes("/",required=["opacity"])['opacity'])
         FILE.close()
         return
 
@@ -78,7 +93,7 @@ class CompendiumTable(object):
 
     def buildDiskInterpolators(self):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if self.opticalDepthTable is None:
+        if not self.tablesLoaded():
             self.load()
         interpolants = (self.wavelengthTable,self.inclinationTable,self.opticalDepthTable)
         self.interpolator = RegularGridInterpolator(interpolants,self.attenuationDiskTable)
@@ -89,7 +104,7 @@ class CompendiumTable(object):
 
     def buildSpheroidInterpolators(self):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if self.opticalDepthTable is None:
+        if not self.tablesLoaded():
             self.load()
         interpolants = (self.wavelengthTable,self.inclinationTable,self.opticalDepthTable,\
                             self.spheroidScaleRadialTable)
