@@ -13,7 +13,7 @@ def locateDatasetsRepository():
     if DATASETS_PATH == "None":
         msg = "No path specified for Galacticus datasets. "+\
             "Specify the path in your environment variables "+\
-            "using the variable name '"+datasetsKeyName+"'."
+            "using the variable name '"+key+"'."
         raise RuntimeError(msg)
     if not DATASETS_PATH.endswith("/"):
         DATASETS_PATH = DATASETS_PATH + "/"
@@ -30,7 +30,7 @@ def recursiveGlob(treeroot,pattern):
 
 class GalacticusData(object):
 
-    def __init__(self,verbose=True):
+    def __init__(self,verbose=False):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.verbose = verbose

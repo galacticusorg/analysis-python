@@ -3,12 +3,13 @@
 import sys,os,fnmatch,re
 import numpy as np
 import unittest
+from . import getEffectiveWavelength
+from .screens.manager import ScreenLaw
 from .. import rcParams
 from ..datasets import Dataset
 from ..Cloudy import CloudyTable
 from ..filters.filters import GalacticusFilter
 from ..properties.manager import Property
-from .screens.manager import ScreenLaw
 
 @Property.register_subclass('dustScreen')
 class DustScreen(Property):
@@ -238,7 +239,8 @@ class DustScreen(Property):
         for key in SCREEN.attrs.keys():
             DATA.attr[key] = SCREEN.attrs[key]
         # Get wavelength at which to query dust screen
-        wavelength = self.getWavelength(propertyName)
+        PROPS = self.galaxies.get(redshift,properties=["redshift"])
+        wavelength = getEffectiveWavelength(MATCH,PROPS["redshift"].data)
         # Get Av value
         Av = self.getAv(propertyName,redshift)
         # Compute attenuation

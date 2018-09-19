@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 from ..data import GalacticusData
 
 
-def locateSimulationSpecsFile(simulation,path=None,verbose=False):
+def locateSimulationSpecsFile(simulation,verbose=False):
     """
     locateSimulationSpecsFile(): Locate XML specifications file for specified simulation.
                                  Raises an IOError if file does not exist.
@@ -17,16 +17,13 @@ def locateSimulationSpecsFile(simulation,path=None,verbose=False):
 
        INPUT  
            simulation -- Name of simulation.
-           path       -- Path to datasets repository. If None, will search for path in
-                         environment variables (stored as 'GALACTICUS_DATASETS'). 
-                         [Default=None]
-          verbose     -- Print additional information. [Default=False]                         
+           verbose    -- Print additional information. [Default=False]                         
            
        OUTPUT
            xmlFile    -- Path to specifications file for this simulation.
     """
     fileName = simulation.lower()+".xml"
-    DATA = GalacticusData(path=path,verbose=verbose)
+    DATA = GalacticusData(verbose=verbose)
     # First check dynamic datasets
     if not os.path.exists(DATA.dynamic+"simulations"):        
         os.makedirs(DATA.dynamic+"simulations")
