@@ -6,7 +6,12 @@ import numpy as np
 import unittest
 from .. import rcParams
 from ..datasets import Dataset
+from ..utils import match_dimensions
 from ..properties.manager import Property
+from .screens.manager import ScreenLaw
+
+SCREENS = ScreenLaw()
+
 
 @Property.register_subclass('dustParameters')
 class DustParameters(Property):
@@ -45,9 +50,14 @@ class DustParameters(Property):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        dustRegex = ":dust(?P<label>"+"|".join(SCREENS.laws.keys())+\
+            "|Atlas|Compendium|CharlotFall2000)"
         searchString = "^(?P<component>[^:]+)LuminositiesStellar"+\
             "(?P<redshiftString>:z(?P<redshift>[\d\.]+))"+\
-            ":dust(?P<label>[^:]+):(?P<parameter>A|R)_V"
+            dustRegex+":(?P<parameter>A|R)_V"
+        #searchString = "^(?P<component>[^:]+)LuminositiesStellar"+\
+        #    "(?P<redshiftString>:z(?P<redshift>[\d\.]+))"+\
+        #    ":dust(?P<label>[^:]+):(?P<parameter>A|R)_V"
         MATCH = re.search(searchString,propertyName)
         return MATCH
 
@@ -94,6 +104,10 @@ class DustParameters(Property):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if not match_dimensions(attenL,unattenL):
+            msg = funcname+"(): attenuated and unattenuated luminosity arrays "+\
+                "have different dimensions."
+            raise ValueError(msg)
         nonZero     = unattenL > 0.0        
         A           = np.ones_like(unattenL)*np.nan
         A[nonZero] = -2.5*np.log10(attenL[nonZero]/unattenL[nonZero])
@@ -116,10 +130,17 @@ class DustParameters(Property):
                 R        -- Numpy array of reddening parameters.
 
         """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if not match_dimensions(attenV,unattenV,attenB,unattenB):
+            msg = funcname+"(): attenuated and unattenuated luminosity arrays "+\
+                "have different dimensions."
+            raise ValueError(msg)
         AV = self.getAttenuationParameter(attenV,unattenV)
         AB = self.getAttenuationParameter(attenB,unattenB)
         colorExcess = AB - AV
-        RV = AV/colorExcess
+        RV = np.ones_like(AV)*np.nan
+        mask = colorExcess>0.0
+        RV[mask] = AV[mask]/colorExcess[mask]
         return RV
                 
     def get(self,propertyName,redshift):        
@@ -147,9 +168,9 @@ class DustParameters(Property):
         label          = propertyMatch.group("label"         )
         parameter      = propertyMatch.group("parameter"     )
         # Build names of the attenuated and unattenuated luminosity datasets.
-        unattenuatedVDatasetName = component+"LuminositiesStellar:V:rest"+redshiftLabel
+        unattenuatedVDatasetName = component+"LuminositiesStellar:Buser_V:rest"+redshiftLabel
         attenuatedVDatasetName   = unattenuatedVDatasetName+":dust"+label
-        unattenuatedBDatasetName = component+"LuminositiesStellar:B:rest"+redshiftLabel
+        unattenuatedBDatasetName = component+"LuminositiesStellar:Buser_B:rest"+redshiftLabel
         attenuatedBDatasetName   = unattenuatedBDatasetName+":dust"+label
         # Retrieve the luminosities.
         propertyNames = [ attenuatedVDatasetName, unattenuatedVDatasetName ]
@@ -172,122 +193,3 @@ class DustParameters(Property):
         del PROPS
         return DATA
     
-
-class UnitTest(unittest.TestCase):
-    
-    @classmethod
-    def setUpClass(self):
-        from ..galaxies import Galaxies
-        from ..io import GalacticusHDF5
-        from ..data import GalacticusData
-        from shutil import copyfile
-        # Locate the dynamic version of the galacticus.snapshotExample.hdf5 file.
-        DATA = GalacticusData(verbose=False)
-        self.snapshotFile = DATA.searchDynamic("galacticus.snapshotExample.hdf5")
-        self.removeExample = False
-        # If the file does not exist, create a copy from the static version.
-        if self.snapshotFile is None:
-            self.snapshotFile = DATA.dynamic+"/examples/galacticus.snapshotExample.hdf5"
-            self.removeExample = True
-            if not os.path.exists(DATA.dynamic+"/examples"):
-                os.makedirs(DATA.dynamic+"/examples")
-            copyfile(DATA.static+"/examples/galacticus.snapshotExample.hdf5",self.snapshotFile)
-        # Initialize the DustParameters class.
-        GH5 = GalacticusHDF5(self.snapshotFile,'r')
-        GALS = Galaxies(GH5Obj=GH5)
-        self.DUST = DustParameters(GALS)
-        return
-
-    @classmethod
-    def tearDownClass(self):
-        # Clear memory and close/delete files as necessary.
-        self.DUST.galaxies.GH5Obj.close()
-        del self.DUST
-        if self.removeExample:
-            os.remove(self.snapshotFile)
-        return
-
-    def testParseDatasetName(self):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        print("UNIT TEST: Dust Parameters: "+funcname)
-        print("Testing DustParameters.parseDatasetName() function")
-        names = ["diskLuminositiesStellar:z1.000:dustCompendium:A_V",\
-                     "spheroidLuminositiesStellar:z1.000:dustCalzetti:R_V",\
-                     "totalLuminositiesStellar:z1.000:dustAllen_AV1.0:R_V"]
-        for name in names:
-            self.assertIsNotNone(self.DUST.parseDatasetName(name))
-        names = ["totalLuminositiesStellar:z1.000:dustAllen_AV1.0:X_V",\
-                     "totalLuminositiesStellar:z1.000:A_V",\
-                     "diskLuminositiesStellar:z1.000:dustCompendium"]
-        for name in names:
-            self.assertIsNone(self.DUST.parseDatasetName(name))
-        print("TEST COMPLETE")
-        print("\n")
-        return
-
-    def testMatches(self):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        print("UNIT TEST: Dust Parameters: "+funcname)
-        print("Testing DustParameters.matches() function")
-        names = ["diskLuminositiesStellar:z1.000:dustCompendium:A_V",\
-                     "spheroidLuminositiesStellar:z1.000:dustCalzetti:R_V",\
-                     "totalLuminositiesStellar:z1.000:dustAllen_AV1.0:R_V"]
-        for name in names:      
-            self.assertTrue(self.DUST.matches(name))
-        names = ["totalLuminositiesStellar:z1.000:dustAllen_AV1.0:X_V",\
-                     "totalLuminositiesStellar:z1.000:A_V",\
-                     "diskLuminositiesStellar:z1.000:dustCompendium"]
-        for name in names:
-            self.assertFalse(self.DUST.matches(name,raiseError=False))
-            self.assertRaises(RuntimeError,self.DUST.matches,name,raiseError=True)
-        print("TEST COMPLETE")
-        print("\n")
-        return
-
-    def testGetAttenuationParameter(self):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        print("UNIT TEST: Dust Parameters: "+funcname)
-        print("Testing DustParameters.getAttenuationParameter() function")
-        N = 50
-        unattenL = np.ones(N,dtype=float)
-        attenL = np.maximum(np.random.rand(N)*unattenL,1.0e-10)
-        value = -2.5*np.log10(attenL/unattenL)
-        result = self.DUST.getAttenuationParameter(attenL,unattenL)
-        self.assertTrue(type(result),np.ndarray)
-        diff = np.fabs(result-value)
-        [self.assertLessEqual(d,1.0e-6) for d in diff]
-        mask = np.random.rand(N)<0.1
-        np.place(unattenL,mask,0.0)
-        result = self.DUST.getAttenuationParameter(attenL,unattenL)
-        [self.assertTrue(np.isnan(result[i])) for i in range(len(result)) if mask[i]]
-        print("TEST COMPLETE")
-        print("\n")
-        return            
-
-    def testGetReddeningParameter(self):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        print("UNIT TEST: Dust Parameters: "+funcname)
-        print("Testing DustParameters.getReddeningParameter() function")
-        N = 50
-        unattenV = np.ones(N,dtype=float)
-        attenV = np.maximum(np.random.rand(N)*unattenV,1.0e-10)
-        unattenB = np.ones(N,dtype=float)
-        attenB = np.maximum(np.random.rand(N)*unattenB,1.0e-10)
-        AV = -2.5*np.log10(attenV/unattenV)
-        AB = -2.5*np.log10(attenB/unattenB)
-        value = AV/(AB-AV)
-        result = self.DUST.getReddeningParameter(attenV,unattenV,attenB,unattenB)
-        self.assertTrue(type(result),np.ndarray)
-        diff = np.fabs(result-value)
-        [self.assertLessEqual(d,1.0e-6) for d in diff]
-        mask = np.random.rand(N)<0.1
-        np.place(unattenV,mask,0.0)
-        mask2 = np.random.rand(N)<0.1
-        np.place(unattenB,mask2,0.0)
-        mask = np.logical_or(mask,mask2)
-        result = self.DUST.getReddeningParameter(attenV,unattenV,attenB,unattenB)
-        [self.assertTrue(np.isnan(result[i])) for i in range(len(result)) if mask[i]]
-        print("TEST COMPLETE")
-        print("\n")
-        return            
-        

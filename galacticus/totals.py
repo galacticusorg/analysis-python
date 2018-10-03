@@ -21,8 +21,9 @@ class Totals(Property):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.galaxies = galaxies
         return
-        
-    def matches(self,propertyName,redshift=None):
+
+
+    def matches(self,propertyName,redshift=None,raiseError=False):
         """
         Totals.matches(): Returns boolean to indicate whether this class can 
                           process the specified property.
@@ -32,6 +33,7 @@ class Totals(Property):
           INPUTS 
               propertyName -- Name of property to process.
               redshift     -- Redshift value to query Galacticus HDF5 outputs. 
+              raiseError   -- Raise exception if unable to match property name.
 
           OUTPUTS 
               match        -- Boolean indicating whether this class can process 
@@ -42,6 +44,10 @@ class Totals(Property):
         exemptOptions = ["totalMetallicity","totalMagnitude*"]
         exempt = [fnmatch.fnmatch(propertyName,option) for option in exemptOptions]
         match = match and not any(exempt)
+        if not match and raiseError:
+            msg = funcname+"(): Specified property '"+propertyName+\
+                "' is not a valid totals property."
+            raise RuntimeError(msg)
         return match
     
     def get(self,propertyName,redshift):
@@ -62,8 +68,7 @@ class Totals(Property):
                              if one of the components is missing.
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if not self.matches(propertyName):
-            raise RuntimeError(funcname+"(): Cannot process property '"+propertyName+"'.")
+        assert(self.matches(propertyName,raiseError=True))
         # Get disk and spheroid properties
         components = [propertyName.replace("total","disk"),propertyName.replace("total","spheroid")]
         GALS = self.galaxies.get(redshift,properties=components)

@@ -6,7 +6,7 @@ class ScreenLaw(object):
     @classmethod
     def register_subclass(cls, propertyType):
         def decorator(subclass):
-            cls.laws[propertyType] = subclass
+            cls.laws[propertyType] = subclass()
             return subclass
         return decorator
 

@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import __future__
+import numpy as np
 
 from ..filters.filters import GalacticusFilter
 from ..Cloudy import CloudyTable

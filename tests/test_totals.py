@@ -43,10 +43,11 @@ class TestTotals(unittest.TestCase):
         # Testing totals.matches
         redshift = 1.0
         self.assertTrue(self.TOTALS.matches("totalMassStellar",redshift))
-        self.assertFalse(self.TOTALS.matches("diskMassStellar",redshift))
-        self.assertFalse(self.TOTALS.matches("spheroidMassStellar",redshift))
-        self.assertFalse(self.TOTALS.matches("totalMetallicity",redshift))
-        self.assertFalse(self.TOTALS.matches("totalMagnitudeAbsolute:SDSS_r:z1.000",redshift))
+        for name in ["diskMassStellar","spheroidMassStellar","totalMetallicity",
+                     "totalMagnitudeAbsolute:SDSS_r:z1.000"]:            
+            self.assertFalse(self.TOTALS.matches(name,redshift))
+            with self.assertRaises(RuntimeError):
+                self.TOTALS.matches(name,redshift,raiseError=True)
         return
 
     def test_TotalsGet(self):

@@ -126,19 +126,25 @@ class CompendiumTable(object):
         return True
     
     def getInterpolationMask(self,opticalDepth):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        nanMask = np.isnan(opticalDepth)
+        opticalDepth[nanMask] = self.opticalDepthTable[-1]*100.0
         if self.extrapolateOpticalDepth:
             interpolated = opticalDepth <= self.opticalDepthTable[-1]
         else:
             interpolated = np.ones(opticalDepth.shape,dtype=bool)
+        interpolated = np.logical_and(interpolated,np.invert(nanMask))
         return interpolated
 
     def getExtrapolationMask(self,opticalDepth):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        nanMask = np.isnan(opticalDepth)
+        opticalDepth[nanMask] = self.opticalDepthTable[-1]
         if self.extrapolateOpticalDepth:
-            extrapolated = opticalDepth >  self.opticalDepthTable[-1]
+            extrapolated = opticalDepth > self.opticalDepthTable[-1]
         else:
             extrapolated = np.zeros(opticalDepth.shape,dtype=bool)
+        extrapolated = np.logical_and(extrapolated,np.invert(nanMask))
         return extrapolated
 
     def buildDiskInterpolators(self):
@@ -214,7 +220,7 @@ class CompendiumTable(object):
         self.assertWavelengthInRange(wavelength[opticalDepthMask])
         self.assertInclinationInRange(inclination[opticalDepthMask])
         self.assertOpticalDepthInRange(opticalDepth[opticalDepthMask])
-        self.assertSpheroidRadialScaleInRange(spheroidScaleRadial)
+        self.assertSpheroidRadialScaleInRange(spheroidScaleRadial[opticalDepthMask])        
         galaxyInterpolants = np.transpose(np.stack((wavelength,inclination,opticalDepth,spheroidScaleRadial)))
         galaxyExtrapolants = np.transpose(np.stack((wavelength,inclination             ,spheroidScaleRadial)))
         attenuations = self.interpolate(galaxyInterpolants,galaxyExtrapolants,opticalDepth,

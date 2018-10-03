@@ -6,6 +6,7 @@ import copy
 import numpy as np
 import scipy.interpolate
 import h5py
+import warnings
 from .CompendiumTable import CompendiumTable
 from . import getEffectiveWavelength
 from .. import rcParams
@@ -95,8 +96,6 @@ class DustCompendium(Property):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if propertyName == "tauV0:dustCompendium":
-            return True
         MATCH = self.parseDatasetName(propertyName)
         if MATCH is not None:
             return True
@@ -105,16 +104,6 @@ class DustCompendium(Property):
                 "' is not a valid dust compendium property."
             raise RuntimeError(msg)
         return False
-
-
-    def computeColumnDensityMetals(self,redshift):
-        PROPS = self.galaxies.get(redshift,properties=["diskAbundancesGasMetals","diskRadius"])
-        columnDensityMetals = np.ones_like(PROPS['diskAbundancesGasMetals'].data)*np.nan
-        mask = PROPS['diskRadius'] > 0.0
-        columnDensityMetals[viable] = np.copy(PROPS['diskAbundancesGasMetals'].data[mask])
-        columnDensityMetals[viable] /= (2.0*Pi*np.copy(PROPS['diskRadius'].data[mask])**2)
-        return columnDensityMetals
-        
 
     def get(self,propertyName,redshift):        
         """
@@ -138,28 +127,39 @@ class DustCompendium(Property):
         MATCH = self.parseDatasetName(propertyName)
         # Extract properties needed to compute attenuation
         unattenuatedDatasetName = propertyName.replace(":dustCompendium","")
-        properties = [unattenuatedDatasetName,"diskDustOpticalDepthCentral","inclination","redshift"]
+        properties = [unattenuatedDatasetName,"diskDustOpticalDepthCentral:dustCompendium",
+                      "inclination","redshift","diskRadius"]
         if MATCH.group('component') == "spheroid":
             properties.append("spheroidRadius")
         PROPS = self.galaxies.get(redshift,properties=properties)
         # Get effective wavelength (convert from angstroms to microns)
         wavelength = getEffectiveWavelength(MATCH,PROPS["redshift"].data)/1.0e4
         # Create mask to avoid missing galaxies
-        opticalDepthMask = np.invert(np.isnan(PROPS["diskDustOpticalDepthCentral"].data))
+        opticalDepthMask = np.invert(np.isnan(PROPS["diskDustOpticalDepthCentral:dustCompendium"].data))
         if MATCH.group('component') == "spheroid":
             opticalDepthMask = np.logical_and(opticalDepthMask,PROPS["spheroidRadius"].data>0.0)
-        # Interpolate over Compendium table
+            spheroidScaleRadius = np.ones_like(PROPS["spheroidRadius"].data)*np.nan
+            spheroidScaleRadius[opticalDepthMask] = \
+                PROPS["spheroidRadius"].data[opticalDepthMask]/PROPS["diskRadius"].data[opticalDepthMask]
+        # Interpolate over Compendium table            
         if MATCH.group('component') == "spheroid":
             attenuations = COMPENDIUM.getSpheroidAttenuation(wavelength,
                                                              PROPS["inclination"].data,
-                                                             PROPS["spheroidRadius"],
-                                                             PROPS["diskDustOpticalDepthCentral"],
+                                                             spheroidScaleRadius,
+                                                             PROPS["diskDustOpticalDepthCentral:dustCompendium"].data,
                                                              opticalDepthMask=opticalDepthMask)
         else:
             attenuations = COMPENDIUM.getDiskAttenuation(wavelength,
                                                          PROPS["inclination"].data,
-                                                         PROPS["diskDustOpticalDepthCentral"],
+                                                         PROPS["diskDustOpticalDepthCentral:dustCompendium"].data,
                                                          opticalDepthMask=opticalDepthMask)
+
+        # Raise warnings for any attenuations greater than unity
+        if any(attenuations>1.0):
+            msg = funcname+"(): Some of the computed attenuations are greater than unity. "+\
+                "Setting upper limit of unity."
+            warnings.warn(msg)
+            attenuations = np.minimum(attenuations,1.0)
         # Apply attenuation to unattenuated luminosity and return Dataset object
         DATA = Dataset(name=propertyName)
         DATA.attr = copy.copy(PROPS[unattenuatedDatasetName].attr)
