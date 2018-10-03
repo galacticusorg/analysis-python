@@ -180,6 +180,5 @@ class TestDustScreen(unittest.TestCase):
         self.assertIsNotNone(DATA.data)
         return
 
-
 if __name__ == "__main__":
     unittest.main()

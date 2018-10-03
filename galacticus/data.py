@@ -48,7 +48,11 @@ class GalacticusData(object):
             msg = funcname+"(): Static datasets path '"+DATASETS_PATH+"static' does not exist."
             raise RuntimeError(msg)
         # Make dynamic path if not found
-        self.dynamic = self.path + "dynamic/"
+        DYNAMIC_PATH = rcParams.get("path","GALACTICUS_DYNAMIC_DATA_PATH",fallback=None)
+        if DYNAMIC_PATH is not None:
+            self.dynamic = DYNAMIC_PATH
+        else:
+            self.dynamic = self.path + "dynamic/"
         if not os.path.exists(self.dynamic):
             os.makedirs(self.dynamic)
         return

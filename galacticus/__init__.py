@@ -35,7 +35,7 @@ class rcConfig(ConfigParser):
         return
 
     def __call__(self):
-        for path in ["GALACTICUS_EXEC_PATH","GALACTICUS_DATA_PATH"]:
+        for path in ["GALACTICUS_EXEC_PATH","GALACTICUS_DATA_PATH","GALACTICUS_DYNAMIC_DATA_PATH"]:
             if path in os.environ.keys():
                 self.update("paths",path,os.environ[path])
         return
