@@ -65,7 +65,7 @@ class GalacticusData(object):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         files = recursiveGlob(path,pattern)
         if len(files)>1:            
-            msg = classname+"(): Multilple files found matching pattern "+pattern+"."
+            msg = classname+"(): Multiple files found matching pattern "+pattern+"."
             if self.verbose:
                 msg = msg + "DIRECTORY = "+path+"\nFiles found are:\n"+\
                     "\n".join(files)
