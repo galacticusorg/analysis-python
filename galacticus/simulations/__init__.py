@@ -13,7 +13,7 @@ def locateSimulationSpecsFile(simulation,verbose=False):
     locateSimulationSpecsFile(): Locate XML specifications file for specified simulation.
                                  Raises an IOError if file does not exist.
 
-    USAGE:  xmlFile = locateSimulationSpecsFile(simulation,[path=None],[verbose=False])
+    USAGE:  xmlFile = locateSimulationSpecsFile(simulation,[verbose=False])
 
        INPUT  
            simulation -- Name of simulation.
@@ -66,11 +66,7 @@ class SimulationBox(object):
         return
 
     def _wrap_dimension(self,i,x):
-        mask = x < 0.0
-        np.place(x,mask,self.size[i]+x[mask])
-        mask = x > self.size[i]
-        np.place(x,mask,x[mask]-self.size[i])
-        return x
+        return x % self.size[i]
         
     def wrap(self,x,y,z):
         """
@@ -127,13 +123,10 @@ class Simulation(object):
     Simulation: class for storing simulation specifications and for quering snapshot 
                 redshift values.
 
-        USAGE: SIM = Simulation(simulation,[path=None],[verbose=False])
+        USAGE: SIM = Simulation(simulation,[verbose=False])
 
             INPUT
                  simulation -- Simulation name.
-                 path       -- Path to datasets repository. If None, will search for path in
-                               environment variables (stored as 'GALACTICUS_DATASETS'). 
-                               [Default=None]
                  verbose    -- Print additional information. [Default=False]                         
 
         Functions:  
@@ -142,12 +135,12 @@ class Simulation(object):
                    snapshot(): Return snapshot closest to specified redshift value.
 
     """
-    def __init__(self,simulation,path=None,verbose=False):
+    def __init__(self,simulation,verbose=False):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.verbose = verbose    
         # Load XML file of simulation specifications
-        xmlFile = locateSimulationSpecsFile(simulation,path=path,verbose=verbose)
+        xmlFile = locateSimulationSpecsFile(simulation,verbose=verbose)
         xmlStruct = ET.parse(xmlFile)
         xmlRoot = xmlStruct.getroot()
         xmlMap = {c.tag:p for p in xmlRoot.iter() for c in p}
@@ -160,8 +153,14 @@ class Simulation(object):
         self.omegaB = float(cosmologyStruct.find("OmegaB").text)
         self.H0 = float(cosmologyStruct.find("H0").text)
         self.h0 = self.H0/100.0
-        self.sigma8 = float(cosmologyStruct.find("sigma8").text)
-        self.ns = float(cosmologyStruct.find("ns").text)
+        try:
+            self.sigma8 = float(cosmologyStruct.find("sigma8").text)
+        except AttributeError:
+            self.sigma8 = None
+        try:
+            self.ns = float(cosmologyStruct.find("ns").text)
+        except AttributeError:
+            self.ns = None
         try:
             self.temperatureCMB = float(cosmologyStruct.find("temperatureCMB").text)
         except AttributeError:
@@ -173,7 +172,7 @@ class Simulation(object):
         particles = xmlRoot.find("particles")
         mass = float(particles.find("mass").text)
         massUnits = particles.find("mass").attrib["units"]
-        number = particles.find("number").text
+        number = int(particles.find("number").text)
         self.particles = SimulationParticles(number,mass,units=massUnits)
         # Set snapshots and corresponding redshifts
         snapshots = xmlRoot.find("snapshots")

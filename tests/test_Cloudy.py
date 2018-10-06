@@ -23,13 +23,13 @@ class TestCloudyTable(unittest.TestCase):
         rcParams.reset()
         return
 
-    def test_CLoudyTableListAvailableLines(self):
+    def test_CloudyTableListAvailableLines(self):
         allLines = self.CLOUDY.lsDatasets("/lines")
         found = self.CLOUDY.listAvailableLines()
         self.assertEqual(allLines,found)
         return
 
-    def test_CLoudyTableLoadEmissionLine(self):
+    def test_CloudyTableLoadEmissionLine(self):
         name = "balmerAlpha6563"
         self.CLOUDY.loadEmissionLine(name)
         self.assertTrue(name in self.CLOUDY.lines.keys())
@@ -48,7 +48,7 @@ class TestCloudyTable(unittest.TestCase):
             self.assertFalse(badName in self.CLOUDY.lines.keys())
         return
 
-    def test_CLoudyTableLoadEmissionLines(self):
+    def test_CloudyTableLoadEmissionLines(self):
         self.CLOUDY.lines = {}
         self.CLOUDY.loadEmissionLines()
         lines = self.CLOUDY.lsDatasets("/lines")

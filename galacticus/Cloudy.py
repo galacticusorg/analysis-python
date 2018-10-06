@@ -240,9 +240,11 @@ class CloudyTable(HDF5):
                    data                         -- Numpy array of zipped galaxy data.
                              
         """
-        return zip(metallicity,densityHydrogen,ionizingFluxHydrogen,\
-                       ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
-    
+        Z = zip(metallicity,densityHydrogen,ionizingFluxHydrogen,
+                ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
+        if isinstance(Z,zip):
+            Z = list(Z)
+        return Z
     
     def interpolate(self,lineName,metallicity,densityHydrogen,ionizingFluxHydrogen,\
                         ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen):
@@ -277,7 +279,7 @@ class CloudyTable(HDF5):
         fill_value = rcParams.get("cloudy","fill_value",fallback=None)
         fill_value = str(fill_value)
         if fnmatch.fnmatch(fill_value.lower(),"none"):
-            fill_value = None
+            fill_value = np.nan
         elif fnmatch.fnmatch(fill_value.lower(),"nan"):            
             fill_value = np.nan
         else:
