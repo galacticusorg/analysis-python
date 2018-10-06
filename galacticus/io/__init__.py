@@ -66,8 +66,8 @@ class GalacticusHDF5(HDF5):
             if nout > 0:
                 isort = np.argsort(np.array([ int(key.replace("Output","")) for key in outputKeys]))
                 self.outputs = np.zeros(nout,dtype=[("iout",int),("a",float),("z",float),("name","|S10")])
-                for i,out in enumerate(np.array(Outputs.keys())[isort]):
-                    self.outputs["name"][i] = out
+                for i,out in enumerate(np.array(list(Outputs.keys()))[isort]):
+                    self.outputs["name"][i] = str(out)
                     self.outputs["iout"][i] = int(out.replace("\n","").replace("Output",""))
                     a = float(Outputs[out].attrs["outputExpansionFactor"])
                     self.outputs["a"][i] = a
@@ -106,7 +106,7 @@ class GalacticusHDF5(HDF5):
         out = self.selectOutput(z)
         if out is None:
             return []
-        return map(str,out["nodeData"].keys())
+        return list(map(str,out["nodeData"].keys()))
 
 
     def countGalaxies(self,z=None):
@@ -269,7 +269,10 @@ class GalacticusHDF5(HDF5):
             return None
         # Select epoch closest to specified redshift
         iselect = np.argmin(np.fabs(self.outputs.z-z))
-        return self.outputs.name[iselect]
+        name = self.outputs.name[iselect]
+        if isinstance(name,bytes):
+            name = name.decode('UTF-8')
+        return name
 
 
     def getOutputRedshift(self,outputName):        

@@ -13,7 +13,7 @@ def buildTestFile(filename):
     f.create_group("/Header")
     g = f["/Data"]
     attrib = g.attrs
-    attrib.create("greeting","hello world",shape=None,dtype=None)
+    attrib.create("greeting","hello world".encode('utf8'),shape=None,dtype=None)
     g.create_dataset("ExampleFloatData",data=np.arange(100,dtype=float),\
                          maxshape=[(None)],\
                          chunks=True,compression="gzip",\
@@ -67,8 +67,8 @@ class TestHDF5(unittest.TestCase):
     
     def test_HDF5ListGroups(self):
         F = HDF5(self.examplefile,'r')
-        grps0 = F.fileObj["/"].keys()
-        grps = F.lsGroups("/",recursive=False)
+        grps0 = list(F.fileObj["/"].keys())
+        grps = F.lsGroups("/",recursive=False)        
         self.assertTrue(grps == grps0)
         self.assertTrue("Header" in grps)
         self.assertTrue("Data" in grps)
@@ -211,7 +211,7 @@ class TestHDF5(unittest.TestCase):
         F.writeDataset("/Data","ExampleData1",data1)
         attr = {"attr1":"hello world"}
         F.addAttributes("/Data",attr,overwrite=False)
-        self.assertEqual(F.fileObj["/Data"].attrs["attr1"],"hello world")
+        self.assertEqual(F.fileObj["/Data"].attrs["attr1"],b"hello world")
         F.addAttributes("/Data/ExampleData1",{"value":1},overwrite=False)
         self.assertEqual(F.fileObj["/Data/ExampleData1"].attrs["value"],1)
         F.addAttributes("/Data/ExampleData1",{"value":2},overwrite=True)
@@ -271,7 +271,7 @@ class TestHDF5(unittest.TestCase):
         F.mkGroup("/Data/ExampleGroup")
         data1 = np.random.rand(50)
         F.writeDataset("/Data","ExampleData1",data1)
-        attr = {"attr1":"hello world","attr2":"foo"}
+        attr = {"attr1":"hello world","attr2":np.array(["foo"])}
         F.addAttributes("/Data",attr,overwrite=False)
         self.assertTrue("attr1" in F.fileObj["/Data"].attrs.keys())
         self.assertTrue("attr2" in F.fileObj["/Data"].attrs.keys())

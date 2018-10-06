@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import numpy as np
+import warnings
 import unittest
 from galacticus.galaxies import Galaxies
 from galacticus.io import GalacticusHDF5
@@ -86,10 +87,12 @@ class TestDustCompendium(unittest.TestCase):
                 DATA = self.DUST.get(name,1.0)
         redshift = 1.0
         zStr = self.DUST.galaxies.GH5Obj.getRedshiftString(redshift)
-        name = "diskLuminositiesStellar:SDSS_r:rest:"+zStr+":dustCompendium"
-        DATA = self.DUST.get(name,redshift)
-        self.assertEqual(DATA.name,name)
-        self.assertIsNotNone(DATA.data)
+        with warnings.catch_warnings():
+            name = "diskLuminositiesStellar:SDSS_r:rest:"+zStr+":dustCompendium"
+            warnings.filterwarnings("ignore")
+            DATA = self.DUST.get(name,redshift)
+            self.assertEqual(DATA.name,name)
+            self.assertIsNotNone(DATA.data)
         return
         
 

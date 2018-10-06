@@ -70,7 +70,7 @@ class xmlTree(object):
 
     def addElementToMap(self,ELEM,path="/"):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        if self.lsElements(ELEM) > 0:
+        if len(self.lsElements(ELEM)) > 0:
             dummy = [self.addElementToMap(E,path=path+"/"+ELEM.tag) for E in self.lsElements(ELEM)]
         self.map.append(path+"/"+ELEM.tag)
         return

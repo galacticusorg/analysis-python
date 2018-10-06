@@ -7,6 +7,22 @@ import fnmatch
 import unittest
 import warnings
 
+
+def convertStringAttribute(attrib):
+    if isinstance(attrib,list):
+        attrib = np.array(attrib)
+    if isinstance(attrib,np.ndarray):
+        if attrib.dtype.char in ["U","S"]:
+            out = np.string_(attrib)
+        else:
+            out = attrib
+    else:
+        if isinstance(attrib,str):
+            out = np.string_(attrib)
+        else:
+            out = attrib
+    return out
+
 def flattenNestedList(l):
     return [item for sublist in l for item in sublist]
 
@@ -402,6 +418,7 @@ class HDF5(object):
     # ATTRIBUTES
     ##############################################################################
     
+
     def readAttributes(self,hdfdir,required=None):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
         if required is None:        
@@ -424,7 +441,7 @@ class HDF5(object):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
         if hdfdir not in self.fileObj:
             raise KeyError(funcname+"(): '"+hdfdir+"' not found in HDF5 file!")                
-        attrib = self.fileObj[hdfdir].attrs
+        attrib = self.fileObj[hdfdir].attrs        
         for att in attributes.keys():
             if att in self.fileObj[hdfdir].attrs.keys():
                 if self.verbose:
@@ -432,12 +449,12 @@ class HDF5(object):
                 if overwrite:
                     if self.verbose:
                         print("        Overwriting attribute '"+att+"'")                        
-                    attrib.create(att,attributes[att],shape=None,dtype=None)
+                    attrib.create(att,convertStringAttribute(attributes[att]),shape=None,dtype=None)
                 else:
                     if self.verbose:
                         print("        Ignoring attribute '"+att+"'")                        
             else:
-                attrib.create(att,attributes[att],shape=None,dtype=None)
+                attrib.create(att,convertStringAttribute(attributes[att]),shape=None,dtype=None)
         return
 
     @readonlyWrapper
