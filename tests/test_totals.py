@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import os
 import unittest
 import numpy as np
 from shutil import copyfile

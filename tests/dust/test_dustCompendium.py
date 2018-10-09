@@ -1,8 +1,10 @@
 #! /usr/bin/env python
 
+import os
 import numpy as np
 import warnings
 import unittest
+from shutil import copyfile
 from galacticus.galaxies import Galaxies
 from galacticus.io import GalacticusHDF5
 from galacticus.data import GalacticusData

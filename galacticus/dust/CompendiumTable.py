@@ -16,8 +16,8 @@ class CompendiumTable(object):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         # Locate compendium attenuations
         DATA = GalacticusData()
-        compendiumFile = rcParams.get("dustCompendium","attenuationsFile",\
-                                          fallback="compendiumAttenuations.hdf5")
+        compendiumFile = rcParams.get("dustCompendium","attenuationsFile",
+                                      fallback="compendiumAttenuations.hdf5")
         self.file = DATA.search(compendiumFile)        
         # Determine whether to extrapolate optical depths
         self.extrapolateOpticalDepth = rcParams.getboolean(\

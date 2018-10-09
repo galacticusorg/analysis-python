@@ -5,6 +5,7 @@ import fnmatch
 import numpy as np
 import unittest
 import warnings
+import six
 from scipy.interpolate import interpn
 from .data import GalacticusData
 from .fileFormats.hdf5 import HDF5
@@ -242,7 +243,7 @@ class CloudyTable(HDF5):
         """
         Z = zip(metallicity,densityHydrogen,ionizingFluxHydrogen,
                 ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
-        if isinstance(Z,zip):
+        if not six.PY2:
             Z = list(Z)
         return Z
     

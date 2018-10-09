@@ -5,8 +5,9 @@ import fnmatch
 import numpy as np
 import unittest
 import warnings
-from galacticus.Cloudy import CloudyTable
 from galacticus import rcParams
+from galacticus.Cloudy import CloudyTable
+
 
 class TestCloudyTable(unittest.TestCase):
     
