@@ -10,7 +10,7 @@ def locateDatasetsRepository():
     DATASETS_PATH = None
     key = "GALACTICUS_DATA_PATH"
     DATASETS_PATH = rcParams.get("paths",key,fallback=None)
-    if DATASETS_PATH == "None":
+    if str(DATASETS_PATH) == "None":
         msg = "No path specified for Galacticus datasets. "+\
             "Specify the path in your environment variables "+\
             "using the variable name '"+key+"'."
@@ -45,7 +45,7 @@ class GalacticusData(object):
         # Check that the static subdirectory exists
         self.static = self.path + "static/"
         if not os.path.exists(self.static):
-            msg = funcname+"(): Static datasets path '"+DATASETS_PATH+"static' does not exist."
+            msg = funcname+"(): Static datasets path '"+self.path+"/static' does not exist."
             raise RuntimeError(msg)
         # Make dynamic path if not found
         DYNAMIC_PATH = rcParams.get("path","GALACTICUS_DYNAMIC_DATA_PATH",fallback=None)
@@ -93,35 +93,4 @@ class GalacticusData(object):
         dataFile = self.searchStatic(pattern,errorNotFound=True)
         return dataFile
     
-
-class UnitTest(unittest.TestCase):
-    
-    def testFindFile(self):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        print("UNIT TEST: GalacticusData: "+funcname)
-        print("Creating instance of GalacticusData class")
-        DATA = GalacticusData(verbose=False)
-        print("Search for SDSS r-band filter")
-        filterFile = DATA.search("SDSS_r.xml")        
-        self.assertIsNotNone(filterFile)
-        self.assertTrue(filterFile.endswith("filters/SDSS_r.xml"))
-        print("TEST COMPLETE")
-        print("\n")
-        return
-
-    def testNotFindFile(self):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        print("UNIT TEST: GalacticusData: "+funcname)
-        print("Creating instance of GalacticusData class")
-        DATA = GalacticusData(verbose=False)
-        print("Attempting search for a non-existent file.")    
-        self.assertRaises(RuntimeError,DATA.search,"thisFilterProbablyDoesNotExist.xml")        
-        print("TEST COMPLETE")
-        print("\n")
-        return
-
-
-    
-    
-
 
