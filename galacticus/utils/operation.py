@@ -41,16 +41,16 @@ def compileGalacticus(mpi=True,nproc=1,verbose=True,errorOnFailure=True):
 
 def runGalacticus(workdir,paramfile,nproc=1,exe="Galacticus.exe",mpi=True,verbose=True):    
     if not os.path.exists(workdir):
-        msg = "Galacticus NOT RUN. Specified work directory '"+workdir"' not found!"
+        msg = "Galacticus NOT RUN. Specified work directory '"+workdir+"' not found!"
         raise FileNotFoundError(msg)
-    os.chdir(workDir)
+    os.chdir(workdir)
     pwd = subprocess.check_output(["pwd"]).replace("\n","")
-    assert(pwd,workDir)
+    assert(pwd,workdir)
     if not os.path.exists(exe):
-        msg = "Galacticus NOT RUN. Galacticus executable '"+exe"' not found!"
+        msg = "Galacticus NOT RUN. Galacticus executable '"+exe+"' not found!"
         raise FileNotFoundError(msg)
     if not os.path.exists(paramfile):
-        msg = "Galacticus NOT RUN. Parameter file '"+paramfile"' not found!"
+        msg = "Galacticus NOT RUN. Parameter file '"+paramfile+"' not found!"
         raise FileNotFoundError(msg)
     cmd = exe+" "+paramfile    
     if mpi:
