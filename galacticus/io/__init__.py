@@ -6,8 +6,7 @@ from ..fileFormats.hdf5 import HDF5
 from ..utils.progress import Progress
 from ..datasets import Dataset
 from .. import rcParams
-
-
+from ..parameters.io import ParametersFromHDF5
 
 
 class GalacticusHDF5(HDF5):
@@ -49,14 +48,7 @@ class GalacticusHDF5(HDF5):
         if "build" in self.lsGroups("/"):
             self.build = dict(self.fileObj["Build"].attrs)
         # Store parameters
-        self.parameters = dict(self.fileObj["Parameters"].attrs)
-        self.parameters_parents = { k:"parameters" for k in self.fileObj["Parameters"].attrs.keys()}
-        for k in self.fileObj["Parameters"]:
-            if len(self.fileObj["Parameters/"+k].attrs.keys())>0:
-                d = dict(self.fileObj["Parameters/"+k].attrs)                
-                self.parameters.update(d)
-                d = { a:k for a in self.fileObj["Parameters/"+k].attrs.keys()}
-                self.parameters_parents.update(d)
+        self.parameters = ParametersFromHDF5.read(self)
         # Store output epochs
         self.outputs = None
         if "Outputs" in self.fileObj.keys():

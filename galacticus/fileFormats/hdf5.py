@@ -1,27 +1,13 @@
 #! /usr/bin/env python
 
+import six
 import sys,os
 import h5py
 import numpy as np
 import fnmatch
 import unittest
 import warnings
-
-
-def convertStringAttribute(attrib):
-    if isinstance(attrib,list):
-        attrib = np.array(attrib)
-    if isinstance(attrib,np.ndarray):
-        if attrib.dtype.char in ["U","S"]:
-            out = np.string_(attrib)
-        else:
-            out = attrib
-    else:
-        if isinstance(attrib,str):
-            out = np.string_(attrib)
-        else:
-            out = attrib
-    return out
+from ..strings import removeByteStrings,addByteStrings
 
 def flattenNestedList(l):
     return [item for sublist in l for item in sublist]
@@ -418,23 +404,23 @@ class HDF5(object):
     # ATTRIBUTES
     ##############################################################################
     
-
     def readAttributes(self,hdfdir,required=None):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
         if required is None:        
-            return dict(self.fileObj[hdfdir].attrs)
+            attr = dict(self.fileObj[hdfdir].attrs)
         else:
             good = list(set(required).intersection(self.fileObj[hdfdir].attrs.keys()))
             bad = list(set(required).difference(self.fileObj[hdfdir].attrs.keys()))            
             if self.verbose:
                 if len(bad)>0:
-                    linereturn = "\n         "
-                    warnings.warn(funcname+"(): Following attributes not present in '"+hdfdir+\
-                              "':"+linereturn+linereturn.join(bad))
+                    warnings.warn(funcname+"(): Following attributes not present in '"+
+                                  hdfdir+"':"+",".join(bad))
             if len(good)==0:
                 return {}
-            else:
-                return {str(g):self.fileObj[hdfdir].attrs[g] for g in good}
+            attr = {g:self.fileObj[hdfdir].attrs[g] for g in good}
+        if six.PY3:
+            attr = {removeByteStrings(key):removeByteStrings(value) for key,value in attr.items()}
+        return attr
     
     @readonlyWrapper
     def addAttributes(self,hdfdir,attributes,overwrite=False):
@@ -449,12 +435,18 @@ class HDF5(object):
                 if overwrite:
                     if self.verbose:
                         print("        Overwriting attribute '"+att+"'")                        
-                    attrib.create(att,convertStringAttribute(attributes[att]),shape=None,dtype=None)
+                    if six.PY3:
+                        attrib.create(att,addByteStrings(attributes[att]),shape=None,dtype=None)
+                    else:
+                        attrib.create(att,attributes[att],shape=None,dtype=None)
                 else:
                     if self.verbose:
                         print("        Ignoring attribute '"+att+"'")                        
             else:
-                attrib.create(att,convertStringAttribute(attributes[att]),shape=None,dtype=None)
+                if six.PY3:
+                    attrib.create(att,addByteStrings(attributes[att]),shape=None,dtype=None)
+                else:
+                    attrib.create(att,attributes[att],shape=None,dtype=None)
         return
 
     @readonlyWrapper

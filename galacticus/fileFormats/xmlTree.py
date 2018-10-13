@@ -136,7 +136,8 @@ class xmlTree(object):
             else:
                 raise RuntimeError(funcname+"(): Parent path does not exist!")
         PARENT = self.getElement(path)
-        ET.SubElement(PARENT,name,attrib=attrib).text = text        
+        ELEM = ET.SubElement(PARENT,name,attrib=attrib)
+        ELEM.text = text        
         self.map.append(path+"/"+name)
         return
 

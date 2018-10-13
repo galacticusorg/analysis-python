@@ -2,6 +2,7 @@
 
 import os,sys,fnmatch
 import numpy as np
+import warnings
 from ..fileFormats.xmlTree import xmlTree
 
 
@@ -25,7 +26,7 @@ class GalacticusParameters(xmlTree):
         super(GalacticusParameters,self).__init__(file=file,root=root)
         return
 
-    def getParameterPath(self,name):
+    def getParameterPath(self,path):
         """
         GalacticusParameters.getParameterPath: Return the path to the parameter in the 
                                                XML tree.
@@ -39,9 +40,9 @@ class GalacticusParameters(xmlTree):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        matches = self.matchPath("/*"+name)
+        matches = self.matchPath("/*"+path)
         if len(matches) == 0:
-            raise ValueError(funcname+"(): Parameter '"+name+"' cannot be located!")
+            raise ValueError(funcname+"(): Parameter '"+path+"' cannot be located!")
         return matches[0]
     
     def getParameter(self,path):
@@ -58,9 +59,9 @@ class GalacticusParameters(xmlTree):
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
         value = self.getElementAttribute(path,attrib="value")
-        if value is None:            
-            print("WARNING! "+funcname+"(): Parameter at path '"+\
-                      path+"' cannot be located!")
+        if value is None: 
+            warnings.warn(funcname+"(): Parameter at path '"+
+                          path+"' cannot be located!")
         return value
     
     def setParameter(self,path,value,createParents=False): 

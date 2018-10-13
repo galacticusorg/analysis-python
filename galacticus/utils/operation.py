@@ -13,7 +13,7 @@ def compileGalacticus(mpi=True,nproc=1,verbose=True,errorOnFailure=True):
         sys.stdout.flush()
     os.chdir(GALACTICUS_EXEC_PATH)
     pwd = subprocess.check_output(["pwd"]).replace("\n","")
-    assert(pwd,GALACTICUS_EXEC_PATH)
+    assert(pwd==GALACTICUS_EXEC_PATH)
     shutil.rmtree("work/build")
     if mpi:
         if verbose:
@@ -45,7 +45,7 @@ def runGalacticus(workdir,paramfile,nproc=1,exe="Galacticus.exe",mpi=True,verbos
         raise FileNotFoundError(msg)
     os.chdir(workdir)
     pwd = subprocess.check_output(["pwd"]).replace("\n","")
-    assert(pwd,workdir)
+    assert(pwd==workdir)
     if not os.path.exists(exe):
         msg = "Galacticus NOT RUN. Galacticus executable '"+exe+"' not found!"
         raise FileNotFoundError(msg)
