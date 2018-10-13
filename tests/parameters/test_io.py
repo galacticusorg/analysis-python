@@ -10,7 +10,7 @@ from galacticus.parameters import GalacticusParameters
 from galacticus.parameters.io import ParametersFromHDF5
 from galacticus.strings import removeByteStrings
 
-class TestReadFromHDF5(unittest.TestCase):
+class TestParametersFromHDF5(unittest.TestCase):
     
     @classmethod
     def setUpClass(self):
@@ -28,7 +28,7 @@ class TestReadFromHDF5(unittest.TestCase):
         self.GH5.close()
         return
 
-    def test_readFromGalacticusFile(self):        
+    def test_ParametersFromHDF5Read(self):        
         PARAMS = ParametersFromHDF5.read(self.GH5)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
