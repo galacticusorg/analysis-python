@@ -20,10 +20,10 @@ class FilterParameterSet(object):
         return
 
     def removeDuplicateFilters(self,PARAMS):
-        filters = PARAMS.getParameter("/parameters/luminosityFilter")
-        frame = PARAMS.getParameter("/parameters/luminosityType")
-        redshift = PARAMS.getParameter("/parameters/luminosityRedshift")
-        process = PARAMS.getParameter("/parameters/luminosityPostprocessSet")        
+        filters = PARAMS.getParameter("/parameters/luminosityFilter").split()
+        frame = PARAMS.getParameter("/parameters/luminosityType").split()
+        redshift = PARAMS.getParameter("/parameters/luminosityRedshift").split()
+        process = PARAMS.getParameter("/parameters/luminosityPostprocessSet").split()
         uniq = []
         for i in range(len(filters)):
             filterStr = filters[i]+"/"+frame[i]+"/"+redshift[i]+"/"+process[i]
