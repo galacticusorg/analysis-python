@@ -119,7 +119,7 @@ class HDF5(object):
     ##############################################################################
     
     @readonlyWrapper
-    def mkGroup(self,hdfdir):        
+    def mkGroup(self,hdfdir,recursive=True):        
         """
         HDF5.mkGroup(): create HDF5 group with specified path.
         
@@ -127,8 +127,12 @@ class HDF5(object):
 
               Input: dir -- path to HDF5 group.       
         """
-        if hdfdir not in self.fileObj:
-            g = self.fileObj.create_group(hdfdir)
+        if hdfdir not in self.fileObj:            
+            if recursive:                
+                parent = "/".join(hdfdir.split("/")[:-1])                
+                if len(parent.strip())>0:
+                    self.mkGroup(parent,recursive=recursive)           
+            g = self.fileObj.create_group(hdfdir)            
         return
 
     

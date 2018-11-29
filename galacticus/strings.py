@@ -23,8 +23,8 @@ def removeByteStrings(value):
 def addByteStrings(value):
     if np.ndim(value)==0:
         result = value
-        if isinstance(value,str):
-            result = np.string_(value)
+        if isinstance(result,str):
+            result = np.string_(result)
         return result
     if isinstance(value,dict):
         result = {addByteStrings(key):addByteStrings(value[key]) for key in value.keys()}

@@ -3,6 +3,29 @@
 import sys
 import numpy as np
 from .io import GalacticusHDF5
+from .datasets import Dataset
+
+
+class GlobalHistory(object):
+        
+    @classmethod
+    def get(cls,GH5):
+        if "globalHistory" not in GH5.lsGroups("/"):
+            return None
+        dsets = GH5.lsDatasets("/globalHistory")
+        dtype = [(name,float) for name in dsets+["historyRedshift"]]
+        size = len(GH5.fileObj["/globalHistoryhistoryExpansion"])
+        GLOBAL = {}
+        for dset in dsets:
+            data = GH5.readDataset("/globalHistory/"+dset)
+            attr = GH5.readAttributes("/globalHistory/"+dset)
+            GLOBAL[dset] = Dataset(name=dset,data=data,attr=attr)
+        name = "historyRedshift"
+        GLOBAL[name] = Dataset(name=name,data=1.0/(GLOBAL["historyExpansion"].data-1.0))
+        return GLOBAL
+        
+
+
 
 def getGlobalHistory(GH5Obj,required=None,unitsInSI=False):    
     """

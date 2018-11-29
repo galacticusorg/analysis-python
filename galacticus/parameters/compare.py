@@ -1,34 +1,61 @@
 #! /usr/bin/env python
 
+import sys
 import numpy as np
+import warnings
 
-EXCEMPT = ["/parameters/mergerTreeConstructorMethod/fileNames"]
+EXEMPT = ["/parameters/mergerTreeConstructorMethod/fileNames"]
 
 class ParametersMatch(object):
     
     @classmethod
     def matchParameter(cls,param1,param2):
-        if np.ndim(param1)!=np.ndim(param2):
-            return False
-        if np.ndim(param1)==0:
-            return param1==param2
-        if len(param1) != len(param2):
-            return False            
-        match = all([cls.matchParameter(a,b) for a,b in zip(param1,param2)])
-        return match
+        return np.array_equal(param1,param2)
 
     @classmethod
-    def match(cls,PARAMS1,PARAMS2):
-        matching = list(set(PARAMS1.map).intersection(PARAMS2.map))
-        match = len(matching)==len(PARAMS1.map) and len(matching)==len(PARAMS2.map)        
-        if not match:
-            return match
-        for path in PARAMS1.map:
-            if path not in EXCEMPT:
-                value1 = PARAMS1.getParameter(path)
-                value2 = PARAMS2.getParameter(path)
-                match = match and cls.matchParameter(value1,value2)
-        return match
+    def missing(cls,PARAMS1,PARAMS2):
+        missing = list(set(PARAMS1.map).difference(PARAMS2.map)) + \
+            list(set(PARAMS2.map).difference(PARAMS1.map))
+        return missing
 
+    @classmethod
+    def common(cls,PARAMS1,PARAMS2):
+        return list(set(PARAMS1.map).intersection(PARAMS2.map))
+
+    @classmethod
+    def matching(cls,PARAMS1,PARAMS2):
+        paths = cls.common(PARAMS1,PARAMS2)        
+        P1 = PARAMS1.getParameter
+        P2 = PARAMS2.getParameter
+        matching = [path for path in paths if cls.matchParameter(P1(path),P2(path))]
+        return matching
+
+    @classmethod
+    def different(cls,PARAMS1,PARAMS2):
+        paths = cls.common(PARAMS1,PARAMS2)        
+        P1 = PARAMS1.getParameter
+        P2 = PARAMS2.getParameter
+        different = [path for path in paths if not cls.matchParameter(P1(path),P2(path))]
+        return different
+
+    @classmethod
+    def exempt(cls,PARAMS1,PARAMS2):
+        different = cls.different(PARAMS1,PARAMS2)
+        return list(set(different).intersection(EXEMPT))
+                    
+    @classmethod
+    def match(cls,PARAMS1,PARAMS2,force=False):
+        funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
+        missing = cls.missing(PARAMS1,PARAMS2)
+        if len(missing)>0:
+            if force:
+                msg = funcname+"(): Some parameters are missing:"+",".join(missing)+"."
+                warnings.warn(msg)
+            else:
+                return False
+        different = cls.different(PARAMS1,PARAMS2)        
+        if len(list(set(different).difference(EXEMPT)))>0:
+            return False
+        return True
 
     
