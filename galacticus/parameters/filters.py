@@ -9,7 +9,7 @@ allowedPostProcessing = ["default","recent","unabsorbed","recentUnabsorbed"]
 allowedAbsorptionMethods = ["inoue2014","meiksin2006","madau1995","lycSuppress","identity"]
 
 class FilterParameterSet(object):
-        
+
     def updateParameterList(self,PARAMS,listName,paramName):    
         paramlist = PARAMS.getParameter(listName)
         if paramlist is None:
@@ -17,6 +17,32 @@ class FilterParameterSet(object):
         else:
             paramlist = paramlist + " " + paramName
         PARAMS.setParameter(listName,paramlist)
+        return
+
+    def removeDuplicateFilters(self,PARAMS):
+        filters = PARAMS.getParameter("/parameters/luminosityFilter")
+        frame = PARAMS.getParameter("/parameters/luminosityType")
+        redshift = PARAMS.getParameter("/parameters/luminosityRedshift")
+        process = PARAMS.getParameter("/parameters/luminosityPostprocessSet")        
+        uniq = []
+        for i in range(len(filters)):
+            filterStr = filters[i]+"/"+frame[i]+"/"+redshift[i]+"/"+process[i]
+            uniq.append(filterStr)
+        uniq = list(np.unique(uniq))
+        filters = []
+        frame = []
+        redshift = []
+        process = []
+        for uni in uniq:
+            comp = uni.split("/")
+            filters.append(comp[0])
+            frame.append(comp[1])
+            redshift.append(comp[2])
+            process.append(comp[3])
+        PARAMS.setParameter("/parameters/luminosityFilter",filters)
+        PARAMS.setParameter("/parameters/luminosityType",frame)
+        PARAMS.setParameter("/parameters/luminosityRedshift",redshift)
+        PARAMS.setParameter("/parameters/luminosityPostprocessSet",process)
         return
 
     def updateMethod(self,PARAMS,methodPath,method):
