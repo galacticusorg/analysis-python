@@ -9,7 +9,9 @@ from ..metallicity import Metallicity
 from ..inclination import Inclination
 from ..ionizingContinuua import IonizingContinuum
 from ..emissionLines.luminosities import EmissionLineLuminosity
+from ..emissionLines.fullWidthHalfMaximum import FullWidthHalfMaximum
 from ..dust.dustCompendium import DustCompendium
 from ..dust.dustParameters import DustParameters
 from ..dust.dustScreens import DustScreen
 from ..dust.dustOpticalDepthCentral import DustOpticalDepthCentral
+

@@ -435,7 +435,7 @@ class HDF5(object):
         for att in attributes.keys():
             if att in self.fileObj[hdfdir].attrs.keys():
                 if self.verbose:
-                        warnings.warn(funcname+"(): Attribute '"+att+"' already exists!")
+                    warnings.warn(funcname+"(): Attribute '"+att+"' already exists!")
                 if overwrite:
                     if self.verbose:
                         print("        Overwriting attribute '"+att+"'")                        
