@@ -41,9 +41,10 @@ if inputfiles is None:
         raise ValueError(msg)
 if mergeFile is None:
     raise ValueError("No output file specified! Use --output <filename>.")
-    
+
+
+
 MERGE = MergeGalacticusHDF5(mergeFile)
-PROG = Progress(len(inputfiles))
-[MERGE.appendFile(ifile,force=force,PROG=PROG) for ifile in inputfiles]
+[MERGE.appendFile(ifile,force=force) for ifile in inputfiles]
 
 

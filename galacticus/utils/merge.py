@@ -7,6 +7,7 @@ from ..fileFormats.hdf5 import HDF5
 from ..parameters.io import ParametersFromHDF5,ParametersToHDF5
 from ..parameters.compare import ParametersMatch
 from .progress import Progress
+from .timing import stopwatch
 
 class MergeGalacticusHDF5(object):
 
@@ -25,6 +26,7 @@ class MergeGalacticusHDF5(object):
 
     def updateUUID(self,hdfObj):        
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print(funcname+"(): Updating UUID")
         uuid = ""
         if "UUID" in self.OUT.readAttributes("/"):
             uuid = self.OUT.readAttributes("/",required=["UUID"])["UUID"]+":"
@@ -44,6 +46,7 @@ class MergeGalacticusHDF5(object):
 
     def updateVersion(self,hdfObj,forceMerge=False):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print(funcname+"(): Updating version information")
         attr = hdfObj.readAttributes("/Version")
         if "Version" not in self.OUT.lsGroups("/"):
             self.OUT.cpGroup(hdfObj.filename,"/Version")
@@ -53,6 +56,7 @@ class MergeGalacticusHDF5(object):
 
     def updateBuild(self,hdfObj,forceMerge=True):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print(funcname+"(): Updating build information")
         attr = hdfObj.readAttributes("/Build")
         if "Build" not in self.OUT.lsGroups("/"):
             self.OUT.cpGroup(hdfObj.filename,"/Build")
@@ -73,7 +77,7 @@ class MergeGalacticusHDF5(object):
         completed = int(attr[name])
         return bool(completed)
 
-    def updateDataset(self,hdfObj,path):
+    def updateDataset(self,hdfObj,path,PROG=None):
         name = path.split("/")[-1]        
         parent = path.replace("/"+name,"")
         data = hdfObj.readDataset(path,exit_if_missing=True)
@@ -83,6 +87,9 @@ class MergeGalacticusHDF5(object):
             self.OUT.addDataset(parent,name,data,append=False)
             attr = hdfObj.readAttributes(path)
             self.OUT.addAttributes(path,attr)
+        if PROG is not None:
+            PROG.increment()
+            PROG.print_status_line()
         return
                 
     def updateMetaData(self,hdfObj):
@@ -95,25 +102,30 @@ class MergeGalacticusHDF5(object):
         return
         
     def updateMergerTreeData(self,hdfObj,output):
+        print("   ---> Updating merger tree data")
         path = "/Outputs/"+output
         dsets = hdfObj.lsDatasets(path)
         [self.updateDataset(hdfObj,path+"/"+dset) for dset in dsets if dset is not "nodeData"]
         return
     
     def updateNodeData(self,hdfObj,output):
+        print("   ---> Updating node data")
         path = "/Outputs/"+output+"/nodeData"
         if "nodeData" not in self.OUT.lsGroups("/Outputs/"+output):
             self.OUT.mkGroup(path)
             attr = hdfObj.readAttributes(path)
             self.OUT.addAttributes(path,attr)
         dsets = hdfObj.lsDatasets(path)
-        [self.updateDataset(hdfObj,path+"/"+dset) for dset in dsets]
+        PROG = Progress(len(dsets))
+        [self.updateDataset(hdfObj,path+"/"+dset,PROG=PROG) for dset in dsets]
         return
             
     def updateSingleOutput(self,hdfObj,output):        
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if "Outputs" not in self.OUT.lsGroups("/"):
             self.OUT.mkGroup("/Outputs")
         path = "/Outputs/"+output
+        print("   Updating "+path)
         if output not in self.OUT.lsGroups("/Outputs"):
             self.OUT.mkGroup(path)
             attr = hdfObj.readAttributes(path)
@@ -125,6 +137,8 @@ class MergeGalacticusHDF5(object):
         return
     
     def updateOutputs(self,hdfObj):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print(funcname+"(): Updating Outputs")
         if "Outputs" not in hdfObj.lsGroups("/"):
             return
         outputs = hdfObj.lsGroups("/Outputs")
@@ -135,6 +149,7 @@ class MergeGalacticusHDF5(object):
 
     def updateParameters(self,hdfObj,force=False):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print(funcname+"(): Updating parameters")
         PARAMS = ParametersFromHDF5.read(hdfObj)        
         if "Parameters" not in self.OUT.lsGroups("/"):
             self.OUT.cpGroup(hdfObj.filename,"/Parameters")
@@ -153,6 +168,8 @@ class MergeGalacticusHDF5(object):
         return
 
     def updateGlobalHistory(self,hdfObj):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print(funcname+"(): Updating global history")
         if "globalHistory" not in hdfObj.lsGroups("/"):
             return
         if "globalHistory" not in self.OUT.lsGroups("/"):
@@ -164,13 +181,17 @@ class MergeGalacticusHDF5(object):
          for dset in datasets]
         return
 
-    def appendFile(self,fname,force=False,PROG=None):
+    def appendFile(self,fname,force=False):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        print("Merging file '"+fname+"'...")
+        STOP = stopwatch()
         HDF = HDF5(fname,'r')
         if not self.fileComplete(HDF):
             if not force:
                 self.delete()
                 raise RuntimeError(funcname+"(): file "+fname+" is corrupted or not complete!")
+            else:
+                warnings.warn(funcname+"(): file "+fname+" may be corrupted or not complete! Forcing merge.")
         self.updateUUID(HDF)
         self.updateVersion(HDF)
         self.updateBuild(HDF)       
@@ -178,9 +199,8 @@ class MergeGalacticusHDF5(object):
         self.updateOutputs(HDF)
         self.updateGlobalHistory(HDF)
         HDF.close()
-        if PROG is not None:
-            PROG.increment()
-            PROG.print_status_line(task="Finished file "+fname)
+        print("Merging complete.")
+        STOP.stop()
         return
     
 
