@@ -4,10 +4,12 @@ import sys,os
 import numpy as np
 import copy
 import unittest
+import warnings
 from scipy.interpolate import RegularGridInterpolator
 from .. import rcParams
 from ..data import GalacticusData
 from ..fileFormats.hdf5 import HDF5
+
 
 class CompendiumTable(object):
     
@@ -18,7 +20,7 @@ class CompendiumTable(object):
         DATA = GalacticusData()
         compendiumFile = rcParams.get("dustCompendium","attenuationsFile",
                                       fallback="compendiumAttenuations.hdf5")
-        self.file = DATA.search(compendiumFile)        
+        self.file = DATA.search(compendiumFile)
         # Determine whether to extrapolate optical depths
         self.extrapolateOpticalDepth = rcParams.getboolean(\
             "dustCompendium","extrapolateOpticalDepth",fallback=True)

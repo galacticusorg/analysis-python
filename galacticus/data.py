@@ -86,11 +86,11 @@ class GalacticusData(object):
     def searchDynamic(self,pattern,errorNotFound=False):
         return self._searchDirectory(self.dynamic,pattern,errorNotFound=errorNotFound)
     
-    def search(self,pattern):
-        dataFile = self.searchDynamic(pattern,errorNotFound=False)
+    def search(self,pattern,dynamicError=False,staticError=True):
+        dataFile = self.searchDynamic(pattern,errorNotFound=dynamicError)
         if dataFile is not None:
             return dataFile
-        dataFile = self.searchStatic(pattern,errorNotFound=True)
+        dataFile = self.searchStatic(pattern,errorNotFound=staticError)
         return dataFile
     
 
