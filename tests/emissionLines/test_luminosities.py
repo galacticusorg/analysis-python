@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import sys
+import sys,os
 import fnmatch
 import numpy as np
 import unittest

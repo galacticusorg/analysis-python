@@ -14,4 +14,4 @@ from ..dust.dustCompendium import DustCompendium
 from ..dust.dustParameters import DustParameters
 from ..dust.dustScreens import DustScreen
 from ..dust.dustOpticalDepthCentral import DustOpticalDepthCentral
-
+from ..spectralEnergyDistribution.spectralEnergyDistribution import SpectralEnergyDistribution

@@ -1,10 +1,14 @@
 #! /usr/bin/env python
 
-import sys
+import sys,os
 import fnmatch
 import numpy as np
 import unittest
-from unittest.mock import patch
+import six
+if six.PY3:
+    from unittest.mock import patch
+else:
+    from mock import patch
 import warnings
 from shutil import copyfile
 from galacticus import rcParams

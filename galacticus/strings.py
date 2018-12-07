@@ -7,7 +7,10 @@ def removeByteStrings(value):
     if np.ndim(value)==0:
         result = value
         if isinstance(value,bytes):
-            result = str(value,encoding='utf-8')
+            if six.PY3:
+                result = str(value,encoding='utf-8')
+            else:
+                result = str(value)
         return result
     if isinstance(value,dict):
         result = {removeByteStrings(key):removeByteStrings(value[key]) for key in value.keys()}

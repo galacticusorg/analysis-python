@@ -1,7 +1,11 @@
 #! /usr/bin/env python
 
 import unittest
-from unittest.mock import patch
+import six
+if six.PY3:
+    from unittest.mock import patch
+else:
+    from mock import patch
 import sys,os,fnmatch
 import warnings
 from shutil import copyfile

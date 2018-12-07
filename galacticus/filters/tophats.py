@@ -34,7 +34,8 @@ class TopHat(object):
         self.VEGA = Vega(verbose=self.verbose)
         return
 
-    def getFilterSize(self,filterName):
+    @classmethod
+    def getFilterSize(cls,filterName):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if "adaptiveResolutionTopHat" in filterName:
             wavelengthCentral,wavelengthWidth = getFilterSizeAdaptiveResolution(filterName)
@@ -46,8 +47,8 @@ class TopHat(object):
                                  "fixedResolutionTopHat_<center>_<resolution>.")
         return wavelengthCentral,wavelengthWidth
 
-    
-    def getFilterSizeAdaptiveResolution(self,filterName):
+    @classmethod
+    def getFilterSizeAdaptiveResolution(cls,filterName):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         search = "adaptiveResolutionTopHat_(?P<center>[\d\.]+)_(?P<width>[\d\.]+)"
         MATCH = re.search(search,filterName) 
@@ -55,8 +56,8 @@ class TopHat(object):
             raise ParseError(funcname+"(): Unable to parse '"+filterName+"'.")
         return float(MATCH.groups('center')),float(MATCH.groups('width'))
 
-    
-    def getFilterSizeFixedResolution(self,filterName):
+    @classmethod
+    def getFilterSizeFixedResolution(cls,filterName):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         search = "fixedResolutionTopHat_(?P<center>[\d\.]+)_(?P<resolution>[\d\.]+)"
         MATCH = re.search(search,filterName) 
