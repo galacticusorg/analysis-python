@@ -2,6 +2,7 @@
 
 import re
 import __future__
+import numpy as np
 
 def parseDatasetName(datasetName):
     # Construct search string to pass to regex                                                                                                                              
@@ -17,7 +18,6 @@ def parseDatasetName(datasetName):
                    "(?P<recent>:recent)?(?P<dust>:dust[^:]+)?"+\
                    "(?P<noLines>:noLines)?"
     return re.search(searchString,datasetName)
-
 
 def getSpectralEnergyDistributionWavelengths(datasetName):
     MATCH = parseDatasetName(datasetName)
