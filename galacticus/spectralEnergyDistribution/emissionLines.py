@@ -1,11 +1,13 @@
 #! /usr/bin/env python
 
+import sys
 import numpy as np
 import fnmatch
 from .. import rcParams
 from ..io import GalacticusHDF5
 from .lineProfiles import LineProfiles
 from ..Cloudy import CloudyTable
+from ..constants import speedOfLight,angstrom
 from . import getSpectralEnergyDistributionWavelengths,parseDatasetName
 
 class sedEmissionLines(object):
@@ -24,7 +26,8 @@ class sedEmissionLines(object):
             datasetName = datasetName + MATCH.group("recent")
         if MATCH.group("dust") is not None:
             datasetName = datasetName + MATCH.group("dust")
-        return self.galaxies.get(redshift,properties=[datasetName])[datasetName].data
+        DATA = self.galaxies.get(redshift,properties=[datasetName])
+        return DATA[datasetName].data
         
     def addLineProfile(self,LINE,MATCH,redshift,wavelengths,luminosities):
         # Get line luminosity
@@ -57,7 +60,8 @@ class sedEmissionLines(object):
         z = self.galaxies.get(redshift,properties=["redshift"])["redshift"].data
         luminosities = np.zeros((len(z),len(wavelengths)),dtype=float)
         # Add in the luminosities for the individual lines
-        [self.addLineProfile(LINE,MATCH,redshift,wavelengths,luminosities) for LINE in self.CLOUDY.lines]
+        [self.addLineProfile(LINE,MATCH,redshift,wavelengths,luminosities) 
+         for LINE in self.CLOUDY.lines.values()]
         # Convert units
         frequency = speedOfLight/np.stack([wavelengths]*luminosities.shape[0])*angstrom
         luminosities /= frequency

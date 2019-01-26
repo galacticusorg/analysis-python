@@ -102,7 +102,8 @@ class TestGalacticusData(unittest.TestCase):
                 warnings.filterwarnings("ignore")
                 result =  DATA.searchDynamic("SDSS_A.xml",errorNotFound=True)
         self.assertIsNone(DATA.searchDynamic("SDSS_A.xml",errorNotFound=False))
-        os.mkdir(DATA.dynamic+"/filters")
+        if not os.path.exists(DATA.dynamic+"/filters"):
+            os.mkdir(DATA.dynamic+"/filters")
         copyfile(DATA.static+"/filters/SDSS_r.xml",DATA.dynamic+"/filters/SDSS_r.xml")
         result = DATA.searchDynamic("SDSS_r.xml",errorNotFound=True)
         self.assertTrue(result.endswith("datasets/dynamic/filters/SDSS_r.xml"))
@@ -115,7 +116,8 @@ class TestGalacticusData(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             DATA.search("SDSS_A.xml")
         self.assertTrue(DATA.search("SDSS_r.xml").endswith("static/filters/SDSS_r.xml"))
-        os.mkdir(DATA.dynamic+"/filters")
+        if not os.path.exists(DATA.dynamic+"/filters"):
+            os.mkdir(DATA.dynamic+"/filters")
         copyfile(DATA.static+"/filters/SDSS_r.xml",DATA.dynamic+"/filters/SDSS_r.xml")
         self.assertTrue(DATA.search("SDSS_r.xml").endswith("dynamic/filters/SDSS_r.xml"))
         os.remove(DATA.dynamic+"/filters/SDSS_r.xml")

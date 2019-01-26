@@ -280,7 +280,7 @@ class CloudyTable(HDF5):
         fill_value = rcParams.get("cloudy","fill_value",fallback=None)
         fill_value = str(fill_value)
         if fnmatch.fnmatch(fill_value.lower(),"none"):
-            fill_value = np.nan
+            fill_value = None
         elif fnmatch.fnmatch(fill_value.lower(),"nan"):            
             fill_value = np.nan
         else:

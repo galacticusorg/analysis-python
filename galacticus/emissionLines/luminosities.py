@@ -427,7 +427,7 @@ class EmissionLineLuminosity(Property):
         attr = {"unitsInSI":luminositySolar}
         attr["massHIIRegion"] = self.getMassHIIRegions()
         attr["lifetimeHIIRegion"] = self.getLifetimeHIIRegions()
-        DATA.attr = attr
+        DATA.attr = attr        
         # Pass properties to CloudyTable() class for interpolation        
         DATA.data = np.copy(self.CLOUDY.interpolate(MATCH.group("lineName"),metallicity,hydrogenGasDensity,\
                                                         ionizingFluxHydrogen,ionizingFluxHeliumToHydrogen,\

@@ -1,6 +1,7 @@
 #! /usr/bin/env python                                                                                                                                                          
-
+import sys
 import numpy as np
+from ..constants import Pi
 
 class LineProfiles(object):
 
@@ -9,6 +10,7 @@ class LineProfiles(object):
         funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
         # Compute sigma for Gaussian
         sigma = FWHM/(2.0*np.sqrt(2.0*np.log(2.0)))
+        sigma =  np.stack([sigma]*len(wavelengths),axis=1).reshape(len(sigma),-1)
         # Compute amplitude for Gaussian
         amplitude = np.stack([lineLuminosity]*len(wavelengths),axis=1).reshape(len(lineLuminosity),-1)
         amplitude /= (sigma*np.sqrt(2.0*Pi))
