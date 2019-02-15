@@ -379,7 +379,7 @@ class GalacticusHDF5(HDF5):
         return self.fileObj["Outputs/"+outstr]
 
 
-    def writeDataset(self,z,DATA,append=False,overwrite=False,chunks=True):
+    def writeGalacticusDataset(self,z,DATA,append=False,overwrite=False,chunks=True):
         """
         GalacticusHDF5.writeDataset(): Write the contents of a Dataset() class instance to the 
                                        Galacticus HDF5 file in the specified redshift output. Any
