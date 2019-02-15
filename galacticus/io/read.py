@@ -39,7 +39,7 @@ class ReadHDF5(Property):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        return self.galaxies.GH5Obj.datasetExists(propertyName,redshift)
+        return self.galaxies.GH5Obj.galaxyDatasetExists(propertyName,redshift)
 
     def get(self,propertyName,redshift=None):
         """

@@ -150,12 +150,12 @@ class GalacticusHDF5(HDF5):
                 ngals = OUT["nodeData/"+dataset].size
         return ngals
 
-    def datasetExists(self,datasetName,z):
+    def galaxyDatasetExists(self,datasetName,z):
         """
-        GalacticusHDF5.datasetExists(): Query whether specified dataset exists in the output that
-                                        is closest to the specified redshift.
+        GalacticusHDF5.galaxyDatasetExists(): Query whether specified dataset exists in the output that
+                                              is closest to the specified redshift.
 
-        USAGE: exists = GalacticusHDF5.datasetExists(datasetName,z)
+        USAGE: exists = GalacticusHDF5.galaxyDatasetExists(datasetName,z)
 
                 INPUTS
                    datasetName -- Name of dataset to search.
@@ -185,7 +185,7 @@ class GalacticusHDF5(HDF5):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         DATA = Dataset()
         DATA.name = datasetName
-        if not self.datasetExists(datasetName,z):
+        if not self.galaxyDatasetExists(datasetName,z):
             return DATA
         path = "/Outputs/"+self.getOutputName(z)+"/nodeData/"+DATA.name
         DATA.attr = self.readAttributes(path)
@@ -209,7 +209,7 @@ class GalacticusHDF5(HDF5):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if not self.datasetExists(datasetName,z): 
+        if not self.galaxyDatasetExists(datasetName,z): 
             return None
         output = self.getOutputName(z)
         dset = self.fileObj["Outputs/"+output+"/nodeData/"+datasetName]
@@ -302,7 +302,7 @@ class GalacticusHDF5(HDF5):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if self.datasetExists("lightconeRedshift",z):
+        if self.galaxyDatasetExists("lightconeRedshift",z):
             DATA = self.getDataset("lightconeRedshift",z)
         else:
             DATA = Dataset()

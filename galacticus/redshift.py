@@ -66,7 +66,7 @@ class Redshift(Property):
                           lightcone information can be located in the HDF5 file.
 
         """
-        if not self.galaxies.GH5Obj.datasetExists("lightconeRedshift",redshift):
+        if not self.galaxies.GH5Obj.galaxyDatasetExists("lightconeRedshift",redshift):
             return None
         # Create Dataset instance 
         DATA = Dataset(name="observedRedshift")
@@ -114,7 +114,7 @@ class Redshift(Property):
         return DATA
 
     def getRedshift(self,redshift):
-        if self.galaxies.GH5Obj.datasetExists("lightconeRedshift",redshift):
+        if self.galaxies.GH5Obj.galaxyDatasetExists("lightconeRedshift",redshift):
             name = "lightconeRedshift"
         else:
             name = "snapshotRedshift"
