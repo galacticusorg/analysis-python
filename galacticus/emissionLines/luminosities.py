@@ -431,7 +431,13 @@ class EmissionLineLuminosity(Property):
         # Pass properties to CloudyTable() class for interpolation        
         DATA.data = np.copy(self.CLOUDY.interpolate(MATCH.group("lineName"),metallicity,hydrogenGasDensity,\
                                                         ionizingFluxHydrogen,ionizingFluxHeliumToHydrogen,\
-                                                        ionizingFluxOxygenToHydrogen))
+                                                        ionizingFluxOxygenToHydrogen))        
+        # Mask out any NaNs if required
+        nanReplaceValue = rcParams.get("emissionLine","nanReplaceValue",fallback=None)
+        if nanReplaceValue is not None:
+            nanMask = np.isnan(DATA.data)
+            np.place(DATA.data,nanMask,float(nanReplaceValue))
+            del nanMask
         # Clear memory
         del metallicity,hydrogenGasDensity,ionizingFluxHydrogen
         del ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen
@@ -439,6 +445,9 @@ class EmissionLineLuminosity(Property):
         luminosityMultiplier = self.getLuminosityMultiplier(propertyName,redshift)
         # Convert units of luminosity 
         DATA.data *= (luminosityMultiplier*numberHIIRegion*erg/luminositySolar)
+
+
+
         return DATA
 
 
