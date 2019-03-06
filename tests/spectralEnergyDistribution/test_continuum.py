@@ -50,7 +50,7 @@ class Test_sedContinuum(unittest.TestCase):
         # Check parse errors
         with self.assertRaises(ParseError):
             z = 1.000
-            name = "diskSpectralEnergyDistribution:1000.0_2000.0_100.0:rest:z1.000"
+            name = "diskSpectralEnergyDistribution:1000.0_2000.0_100.0:z1.000"
             tophats = self.SED.identifyTopHatLuminosityDatasets(z,name)
         # Test recovery of top hat filters
         path = "galacticus.io.GalacticusHDF5.availableDatasets"

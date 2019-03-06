@@ -38,7 +38,7 @@ class GalacticusFilter(object):
         self.verbose = verbose
         self.DATA = GalacticusData(verbose=self.verbose)
         self.VEGA = Vega(verbose=self.verbose)
-        self.TOPHATS = TopHat(verbose=self.verbose,Vega=self.VEGA)
+        self.TOPHATS = TopHat(verbose=self.verbose,VegaObj=self.VEGA)
         self.cache = {}
         return
 

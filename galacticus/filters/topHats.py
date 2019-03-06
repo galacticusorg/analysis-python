@@ -27,15 +27,15 @@ def getTransmissionCurve(wavelengthCentral,wavelengthWidth,transmissionSize=1000
 
 class TopHat(object):
 
-    def __init__(self,verbose=False,Vega=None):
+    def __init__(self,verbose=False,VegaObj=None):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.verbose = verbose
         self.DATA = GalacticusData(verbose=self.verbose)
-        if Vega is None:
+        if VegaObj is None:
             self.VEGA = Vega(verbose=self.verbose)
         else:
-            self.VEGA = Vega
+            self.VEGA = VegaObj
         return
 
     @classmethod

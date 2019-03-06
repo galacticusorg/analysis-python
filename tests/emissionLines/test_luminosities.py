@@ -81,14 +81,14 @@ class TestLuminosities(unittest.TestCase):
         # Tests that continuum luminosities names returned for luminosity name
         name = "diskLineLuminosity:balmerAlpha6563:rest:z1.000"
         Ly,He,O = self.LINES.getContinuumLuminosityNames(name)
-        self.assertEqual(Ly,"diskLymanContinuumLuminosity:z1.000")
-        self.assertEqual(He,"diskHeliumContinuumLuminosity:z1.000")
-        self.assertEqual(O,"diskOxygenContinuumLuminosity:z1.000")
+        self.assertEqual(Ly,"diskLymanContinuumLuminosity:rest:z1.000")
+        self.assertEqual(He,"diskHeliumContinuumLuminosity:rest:z1.000")
+        self.assertEqual(O,"diskOxygenContinuumLuminosity:rest:z1.000")
         name = "spheroidLineLuminosity:balmerAlpha6563:observed:z1.000:recent"
         Ly,He,O = self.LINES.getContinuumLuminosityNames(name)
-        self.assertEqual(Ly,"spheroidLymanContinuumLuminosity:z1.000:recent")
-        self.assertEqual(He,"spheroidHeliumContinuumLuminosity:z1.000:recent")
-        self.assertEqual(O,"spheroidOxygenContinuumLuminosity:z1.000:recent")
+        self.assertEqual(Ly,"spheroidLymanContinuumLuminosity:observed:z1.000:recent")
+        self.assertEqual(He,"spheroidHeliumContinuumLuminosity:observed:z1.000:recent")
+        self.assertEqual(O,"spheroidOxygenContinuumLuminosity:observed:z1.000:recent")
         # Check Runtime error is returned for incorrect dataset anme
         name = "spheroidLineLuminosity:balmerAlpha6563:observed"
         self.assertRaises(RuntimeError,self.LINES.getContinuumLuminosityNames,name)
