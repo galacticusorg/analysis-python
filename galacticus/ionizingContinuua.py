@@ -25,7 +25,7 @@ class IonizingContinuum(Property):
         # Extract information from dataset name
         searchString = "^(?P<component>disk|spheroid)"+\
             "(?P<continuum>Lyman|Helium|Oxygen)ContinuumLuminosity"+\
-            ":z(?P<redshift>[\d\.]+)(?P<recent>:recent)?$"
+            ":(?P<frame>[^:]+):z(?P<redshift>[\d\.]+)(?P<recent>:recent)?$"
         return re.search(searchString,datasetName)
 
     def getConversionFactor(self,FILTER):
@@ -52,7 +52,7 @@ class IonizingContinuum(Property):
         # Extract appropriate stellar luminosity
         luminosityName = MATCH.group('component')+"LuminositiesStellar:"+\
             self.filterNames[MATCH.group('continuum')]+\
-            ":rest:z"+MATCH.group('redshift')
+            ":"+MATCH.group("frame")+":z"+MATCH.group('redshift')
         if MATCH.group('recent') is not None:
             luminosityName = luminosityName + MATCH.group('recent')
         GALS = self.galaxies.get(redshift,properties=[luminosityName])
