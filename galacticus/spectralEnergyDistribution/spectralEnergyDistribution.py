@@ -23,23 +23,6 @@ class SpectralEnergyDistribution(Property):
         self.EmissionLines = sedEmissionLines(self.galaxies)
         return
 
-    def parseDatasetName(self,propertyName):
-        """
-        SpectralEnergyDistribution.parseDatasetName: Parse an SED dataset name.
-
-        USAGE: SEARCH = SpectralEnergyDistribution.parseDatasetName(propertyName)
-
-             INPUTS 
-                   propertyName -- Property name to parse.
-
-             OUTPUTS 
-                   SEARCH       -- Regex seearch (re.search) object or None if 
-                                   propertyName cannot be parsed.
-
-        """
-        return parseDatasetName(propertyName)
-
-
     def matches(self,propertyName,redshift=None,raiseError=False):
         """
         SpectralEnergyDistribution.matches: Returns boolean to indicate whether this 
@@ -60,7 +43,7 @@ class SpectralEnergyDistribution(Property):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        MATCH = self.parseDatasetName(propertyName)
+        MATCH = parseDatasetName(propertyName)
         if MATCH is not None:
             return True
         if raiseError:
@@ -70,8 +53,11 @@ class SpectralEnergyDistribution(Property):
         return False
 
     @classmethod
-    def ergPerSecond(cls,sed,zeroCorrection=1.0e-50):
+    def ergPerSecond(cls,sed):
         funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
+        zeroCorrection = rcParams.getfloat("spectralEnergyDistribution",
+                                           "zeroCorrection",
+                                           fallback=1.0e-50)
         sed = np.log10(sed+zeroCorrection)
         sed += np.log10(luminosityAB)
         sed -= np.log10(erg)
@@ -92,9 +78,9 @@ class SpectralEnergyDistribution(Property):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         assert(self.matches(propertyName,raiseError=True))
         # Extract information from property name
-        MATCH = self.parseDatasetName(propertyName)
+        MATCH = parseDatasetName(propertyName)
         # Get continuum 
-        continuum = self.Continuum.get(propertyName,redshift)
+        wavelengths,continuum = self.Continuum.get(propertyName,redshift)
         # Get emission lines
         if MATCH.group("noLines") is None:
             lines = self.EmissionLines.get(propertyName,redshift)
@@ -103,7 +89,7 @@ class SpectralEnergyDistribution(Property):
         # Compute SED
         sed = self.convertToMicroJanskies(redshift,continuum+lines)
         DATA = Dataset(name=propertyName)
-        attr = {"unitsInSI":janksy*micro*erg/centi**2}
+        attr = {"unitsInSI":jansky*micro*erg/centi**2}
         DATA.data = sed
         return DATA
 

@@ -16,7 +16,7 @@ def parseDatasetName(datasetName):
                    "(?P<lineWidth>:fixedWidth[\d\.]+)?"+\
                    "(?P<snrString>:snr(?P<snr>[\d\.]+))?"+\
                    "(?P<recent>:recent)?(?P<dust>:dust[^:]+)?"+\
-                   "(?P<noLines>:noLines)?"
+                   "(?P<noLines>:noLines)?$"
     return re.search(searchString,datasetName)
 
 def getSpectralEnergyDistributionWavelengths(datasetName):

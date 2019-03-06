@@ -7,6 +7,7 @@ from ..utils.progress import Progress
 from ..datasets import Dataset
 from .. import rcParams
 from ..parameters.io import ParametersFromHDF5
+from ..cosmology import loadModelCosmology
 
 
 class GalacticusHDF5(HDF5):
@@ -49,6 +50,8 @@ class GalacticusHDF5(HDF5):
             self.build = dict(self.fileObj["Build"].attrs)
         # Store parameters
         self.parameters = ParametersFromHDF5.read(self)
+        # Load cosmology
+        self.cosmology = loadModelCosmology(self.parameters)
         # Store output epochs
         self.outputs = None
         if "Outputs" in self.fileObj.keys():
