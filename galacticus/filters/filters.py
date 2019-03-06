@@ -5,6 +5,7 @@ import numpy as np
 import unittest
 from . import Filter
 from .vega import Vega
+from .topHats import TopHat
 from ..data import GalacticusData
 
 
@@ -37,6 +38,7 @@ class GalacticusFilter(object):
         self.verbose = verbose
         self.DATA = GalacticusData(verbose=self.verbose)
         self.VEGA = Vega(verbose=self.verbose)
+        self.TOPHATS = TopHat(verbose=self.verbose,Vega=self.VEGA)
         self.cache = {}
         return
 
@@ -85,10 +87,8 @@ class GalacticusFilter(object):
         if filterName in self.cache.keys():
             return self.cache[filterName]
         # Check if filter stored in datasets respository        
-        if fnmatch.fnmatch(filterName.lower(),"*tophat*") or fnmatch.fnmatch(filterName,"*emissionLine*"):
-            FILTER = None
-            #TOPHAT = TopHat()
-            #FILTER = TOPHAT(filterName,**kwargs)
+        if fnmatch.fnmatch(filterName.lower(),"*tophat*"):
+            FILTER = self.TOPHATS.create(filterName,writeToFile=False)
         else:
             filterFile = self.DATA.search(filterName+".xml")
             FILTER = Filter()
@@ -99,20 +99,3 @@ class GalacticusFilter(object):
         return FILTER
 
 
-class UnitTest(unittest.TestCase):
-
-    def testLoadStandardFilter(self):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        print("UNIT TEST: GalacticusFilter")
-        print("Create instance of GalacticusFilter class")
-        GF = GalacticusFilter()
-        print("Load SDSS r-band filter")
-        FILTER = GF.load("SDSS_r")
-        self.assertEqual(FILTER.name,"SDSS r")
-        self.assertIsNotNone(FILTER.effectiveWavelength)
-        self.assertIsNotNone(FILTER.transmission)
-        print("Successfully loaded SDSS r-band filter")
-        print("TEST COMPLETE")
-        print("\n")        
-
-    

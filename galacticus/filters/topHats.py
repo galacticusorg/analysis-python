@@ -27,12 +27,15 @@ def getTransmissionCurve(wavelengthCentral,wavelengthWidth,transmissionSize=1000
 
 class TopHat(object):
 
-    def __init__(self,verbose=False):
+    def __init__(self,verbose=False,Vega=None):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.verbose = verbose
         self.DATA = GalacticusData(verbose=self.verbose)
-        self.VEGA = Vega(verbose=self.verbose)
+        if Vega is None:
+            self.VEGA = Vega(verbose=self.verbose)
+        else:
+            self.VEGA = Vega
         return
 
     @classmethod
@@ -74,14 +77,13 @@ class TopHat(object):
         wavelengthWidth = wavelengthMaximum - wavelengthMinimum
         return wavelengthCentral,wavelengthWidth
 
-
     def create(self,filterName,writeToFile=True,transmissionSize=1000,edgesBufferFraction=0.1):
         FILTER = Filter()
         FILTER.name = filterName
         wavelengthCentral,wavelengthWidth = self.getFilterSize(filterName)
         FILTER.transmission = getTransmissionCurve(wavelengthCentral,wavelengthWidth,\
                                                        transmissionSize=transmissionSize,\
-                                                       edgesBufferFraction=0.1)
+                                                       edgesBufferFraction=edgesBufferFraction)
         FILTER.setEffectiveWavelength()
         FILTER.vegaOffset = self.VEGA.abVegaOffset(FILTER.transmission.wavelength,\
                                                        FILTER.transmission.transmission)
@@ -92,10 +94,8 @@ class TopHat(object):
         if writeToFile:
             FILTER.writeToFile()
         return FILTER
-    
-    
 
-
+    
 class adaptiveResolutionTopHatArray(object):
 
     def __init__(self,lambdaMin,lambdaMax,lambdaWidth,z):

@@ -24,7 +24,7 @@ def computeEffectiveWavelength(wavelength,transmission):
             transmission -- Numpy array of filter transmssion curve.
 
        OUTPUT
-            effectiveWavelength -- Effactive wavelength for transmission curve.
+            effectiveWavelength -- Effective wavelength for transmission curve.
     """
     return np.sum(wavelength*transmission)/np.sum(transmission)
 
