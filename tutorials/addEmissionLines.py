@@ -36,5 +36,5 @@ for redshift in model.availableRedshifts():
     for propertyName in propertyNames:
         print("   Computing emission line luminosity: "+propertyName)
         property = galaxies.retrieveProperty(propertyName,redshift)
-        model.writeDataset(redshift,property)
+        model.writeGalacticusDataset(redshift,property)
 model.close()

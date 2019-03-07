@@ -111,7 +111,7 @@ class sedContinuum(object):
                               fallback="linear")
         if luminosities.shape[1] != len(wavelengths):
             raise ValueError(funcname+"(): Luminosities array must have shape: (n,len(wavelengths)).")
-        f = interp1d(wavelengths,luminosities,kind=method,axis=1)
+        f = interp1d(wavelengths,luminosities,kind=method,axis=1,fill_value="extrapolate")
         return f(newWavelengths)
 
     @classmethod

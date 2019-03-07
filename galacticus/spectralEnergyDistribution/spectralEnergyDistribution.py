@@ -6,7 +6,7 @@ import warnings
 from .. import rcParams
 from ..datasets import Dataset
 from ..properties.manager import Property
-from ..constants import megaParsec,centi,Pi,jansky,erg,luminosityAB,micro
+from ..constants import megaParsec,centi,Pi,jansky,erg,luminosityAB,micro,angstrom
 from . import parseDatasetName,getSpectralEnergyDistributionWavelengths
 from .continuum import sedContinuum
 from .emissionLines import sedEmissionLines
@@ -89,7 +89,11 @@ class SpectralEnergyDistribution(Property):
         # Compute SED
         sed = self.convertToMicroJanskies(redshift,continuum+lines)
         DATA = Dataset(name=propertyName)
-        attr = {"unitsInSI":jansky*micro*erg/centi**2}
+        attr = {}
+        attr["unitsInSI"] = jansky*micro*erg/centi**2
+        attr["wavelength"] = wavelengths
+        attr["wavelengthUnitsInSI"] = angstrom
+        DATA.attr = attr
         DATA.data = sed
         return DATA
 

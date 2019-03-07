@@ -33,4 +33,4 @@ for redshift in model.availableRedshifts():
             print "   Computing dust extinguished luminosity for band: "+propertyName
             propertyNameDusty = propertyName+":dustCompendium"
         property = galaxies.retrieveProperty(propertyNameDusty,redshift)
-        model.writeDataset(redshift,property)
+        model.writeGalacticusDataset(redshift,property)
