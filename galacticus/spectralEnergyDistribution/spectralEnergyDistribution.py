@@ -11,7 +11,7 @@ from . import parseDatasetName,getSpectralEnergyDistributionWavelengths
 from .continuum import sedContinuum
 from .emissionLines import sedEmissionLines
 
-@Property.register_subclass('spectralEneergyDistribution')
+@Property.register_subclass('spectralEnergyDistribution')
 class SpectralEnergyDistribution(Property):
 
     def __init__(self,galaxies,verbose=False):
