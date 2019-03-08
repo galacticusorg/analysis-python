@@ -1,12 +1,14 @@
 #! /usr/bin/env python
 
 import os,sys,fnmatch,glob,shutil
+import warnings
 import numpy as np
 from ..fileFormats.hdf5 import HDF5
 from ..utils.progress import Progress
 from ..datasets import Dataset
 from .. import rcParams
 from ..parameters.io import ParametersFromHDF5
+from ..strings import removeByteStrings,addByteStrings
 from ..cosmology import loadModelCosmology
 
 
@@ -62,7 +64,7 @@ class GalacticusHDF5(HDF5):
                 isort = np.argsort(np.array([ int(key.replace("Output","")) for key in outputKeys]))
                 self.outputs = np.zeros(nout,dtype=[("iout",int),("a",float),("z",float),("name","|S10")])
                 for i,out in enumerate(np.array(list(Outputs.keys()))[isort]):
-                    self.outputs["name"][i] = str(out)
+                    self.outputs["name"][i] = out
                     self.outputs["iout"][i] = int(out.replace("\n","").replace("Output",""))
                     a = float(Outputs[out].attrs["outputExpansionFactor"])
                     self.outputs["a"][i] = a
@@ -267,7 +269,7 @@ class GalacticusHDF5(HDF5):
         name = self.outputs.name[iselect]
         if isinstance(name,bytes):
             name = name.decode('UTF-8')
-        return name
+        return removeByteStrings(name)
 
 
     def getOutputRedshift(self,outputName):        
@@ -282,8 +284,9 @@ class GalacticusHDF5(HDF5):
                OUTPUTS
                           z     -- Redshift corresponding to specified output.
 
-        """
-        i = int(np.argwhere(self.outputs.name=="Output"+outputName.replace("Output","")))
+        """        
+        pattern = addByteStrings("Output"+outputName.replace("Output",""))
+        i = int(np.argwhere(self.outputs.name==pattern))
         return self.outputs.z[i]
 
 
@@ -333,7 +336,14 @@ class GalacticusHDF5(HDF5):
         
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        return fnmatch.filter(fnmatch.filter(self.availableDatasets(z),"*z[0-9].[0-9]*")[0].split(":"),"z*")[0]
+        ngals = self.countGalaxiesAtRedshift(z)
+        if ngals == 0:
+            outputName = self.getOutputName(z)
+            iz = self.getOutputRedshift(outputName)
+            warnings.warn(funcname+"(): Output "+outputName+" (z="+str(iz)+") does not contain any galaxies!")
+            return None
+        dsets = fnmatch.filter(self.availableDatasets(z),"*z[0-9].[0-9]*")
+        return fnmatch.filter(dsets[0].split(":"),"z*")[0]
     
     def nearestRedshift(self,z):
         """
