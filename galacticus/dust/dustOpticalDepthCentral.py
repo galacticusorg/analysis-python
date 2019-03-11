@@ -97,7 +97,7 @@ class DustOpticalDepthCentral(Property):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
         PROPS = self.galaxies.get(redshift,properties=["diskAbundancesGasMetals","diskRadius"])
         columnDensityMetals = np.ones_like(PROPS['diskAbundancesGasMetals'].data)*np.nan
-        mask = PROPS['diskRadius'].data > 0.0
+        mask = np.logical_and(PROPS['diskRadius'].data>0.0,PROPS['diskAbundancesGasMetals'].data>=0.0)
         columnDensityMetals[mask] = np.copy(PROPS['diskAbundancesGasMetals'].data[mask])
         columnDensityMetals[mask] /= (2.0*Pi*np.copy(PROPS['diskRadius'].data[mask])**2)
         return columnDensityMetals

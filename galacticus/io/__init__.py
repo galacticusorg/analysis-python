@@ -100,6 +100,10 @@ class GalacticusHDF5(HDF5):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        try:
+            z = float(z)
+        except ValueError:
+            raise ValueError(funcname+"(): Argument must be a singular redshift value.")    
         out = self.selectOutput(z)
         if out is None:
             return []
