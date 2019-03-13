@@ -3,6 +3,7 @@
 import re
 import os,sys
 import unittest
+import warnings
 import numpy as np
 from shutil import copyfile
 from galacticus.galaxies import Galaxies
@@ -171,13 +172,17 @@ class TestDustScreen(unittest.TestCase):
         redshift = 1.0
         zStr = self.DUST.galaxies.GH5Obj.getRedshiftString(redshift)
         name = "diskLuminositiesStellar:SDSS_r:rest:"+zStr+":dustCalzetti"
-        DATA = self.DUST.get(name,redshift)
-        self.assertEqual(DATA.name,name)
-        self.assertIsNotNone(DATA.data)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            DATA = self.DUST.get(name,redshift)
+            self.assertEqual(DATA.name,name)
+            self.assertIsNotNone(DATA.data)
         name = "diskLuminositiesStellar:SDSS_r:observed:"+zStr+":dustAllen_Av0.4"
-        DATA = self.DUST.get(name,redshift)
-        self.assertEqual(DATA.name,name)
-        self.assertIsNotNone(DATA.data)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            DATA = self.DUST.get(name,redshift)
+            self.assertEqual(DATA.name,name)
+            self.assertIsNotNone(DATA.data)
         return
 
 if __name__ == "__main__":

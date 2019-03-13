@@ -162,7 +162,8 @@ class EmissionLineLuminosity(Property):
         names = [LymanName,HeliumName,OxygenName]
         return self.galaxies.get(redshift,properties=names)
 
-    def getIonizingFluxHydrogen(self,LyLuminosity):        
+    @classmethod
+    def getIonizingFluxHydrogen(cls,LyLuminosity):        
         """
         EmissionLineLuminosity.getIonizingFluxHydrogen(): Compute the Lyman ionizing flux from the supplied
                                                           Lyman continuuum luminosity.
@@ -176,12 +177,13 @@ class EmissionLineLuminosity(Property):
               flux       -- log10 of Lyman ionizing flux.
 
         """
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
+        funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name        
         ionizingFluxHydrogen = np.copy(LyLuminosity)
         np.place(ionizingFluxHydrogen,ionizingFluxHydrogen==0.0,np.nan)
         return np.log10(ionizingFluxHydrogen)+50.0
     
-    def getIonizingFluxRatio(self,LyLuminosity,XLuminosity):
+    @classmethod
+    def getIonizingFluxRatio(cls,LyLuminosity,XLuminosity):
         """
         EmissionLineLuminosity.getIonizingFluxRatio(): Compute the ratio of Helium or Oxygen ionizing flux 
                                                        to Lyman ionizing flux.
@@ -196,7 +198,7 @@ class EmissionLineLuminosity(Property):
               ratio           -- log10 of ionizing flux ratio..
 
         """
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
         LymanFlux = np.copy(LyLuminosity)        
         np.place(LymanFlux,LymanFlux==0.0,np.nan)
         XFlux = np.copy(XLuminosity)
@@ -260,47 +262,6 @@ class EmissionLineLuminosity(Property):
         lifetimeHIIRegion = self.getLifetimeHIIRegions()
         return GALS[sfrName].data*lifetimeHIIRegion/massHIIRegion
         
-    def getHydrogenGasDensity(self,redshift,component):
-        """
-        EmissionLineLuminosity.getHydrogenGasDensity(): Compute Hydrogen gas density at given redshift
-                                                        for specified galaxy component.
-
-        USAGE: density = EmissionLineLuminosity.getHydrogenGasDensity(redshift,component)
-
-           INPUTS
-               redshift  -- Redshift value to query Galacticus HDF5 outputs.
-               component -- String indicating component to compute number for. String
-                            be either 'disk' or 'spheroid'.
-        
-           OUTPUTS
-               density   -- Numpy array of Hydrogen gas density.
-        
-        """
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if component.lower() not in ["disk","spheroid"]:
-            raise ValueError(funcname+"(): Component '"+component+"' not recognized. "+\
-                                 "Should be either 'disk' or 'spheroid'.")
-        # Extract gas mass and galaxy radius
-        gas = component+"MassGas"
-        radius = component+"Radius"
-        GALS = self.galaxies.get(redshift,properties=[gas,radius])       
-        # Compute volume in cm^3
-        volume = np.copy((GALS[radius].data*mega*parsec/centi)**3)
-        np.place(volume,volume==0.0,np.nan)
-        # Compute gas mass in kg
-        mass = np.copy(GALS[gas].data)*massSolar
-        np.place(mass,mass==0.0,np.nan)
-        # Clear GALS from memory
-        del GALS
-        # Compute density in kg/cm^3        
-        density = np.copy(mass/volume)
-        density *= massFractionHydrogen
-        density /= (4.0*Pi*massAtomic*atomicMassHydrogen)
-        density = np.log10(density)
-        # Clear memory from unnecessary variables
-        del mass,volume
-        return density
-
     def getLuminosityMultiplier(self,propertyName,redshift):
         """
         EmissionLineLuminosity.getLuminosityMultiplier(): If emission line is under a broadband filter,
@@ -408,16 +369,17 @@ class EmissionLineLuminosity(Property):
                               "continuum luminosities is missing. Returning None instance.")
             return None
         # Get galaxy properties for calculation
-        # i) Hydrogen gas density
-        hydrogenGasDensity = self.getHydrogenGasDensity(redshift,MATCH.group('component'))
-        # ii) Metallicity
         metals = MATCH.group('component')+"GasMetallicity"
-        GALS = self.galaxies.get(redshift,properties=[metals])
+        hydrogen = MATCH.group('component')+"HydrogenGasDensity"
+        GALS = self.galaxies.get(redshift,properties=[metals,hydrogen])
+        # i) Hydrogen gas density
+        hydrogenGasDensity = np.log10(np.copy(GALS[hydrogen].data))
+        # ii) Metallicity
         metallicity = np.copy(GALS[metals].data)
         del GALS
         # iii) Ionizing Hydrogen flux
         ionizingFluxHydrogen = self.getIonizingFluxHydrogen(FLUXES[LymanName].data)
-        #      Convert the hydrogen ionizing luminosity to be per HII region
+        # Convert the hydrogen ionizing luminosity to be per HII region
         numberHIIRegion = self.getNumberHIIRegions(redshift,MATCH.group('component'))
         np.place(numberHIIRegion,numberHIIRegion==0.0,np.nan)
         ionizingFluxHydrogen -= np.log10(numberHIIRegion)

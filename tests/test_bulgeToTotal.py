@@ -63,7 +63,7 @@ class TestBulgeToTotal(unittest.TestCase):
             self.BULGE.get("aMissingProperty",redshift)
         for name in ["MassStellar","StarFormationRate"]:
             with warnings.catch_warnings():
-                warnings.filterwarnings("ignore",message="invalid value encountered in divide")
+                warnings.filterwarnings("ignore")
                 OUT = self.BULGE.galaxies.GH5Obj.selectOutput(redshift)
                 bulge = np.array(OUT["nodeData/spheroid"+name])
                 disk = np.array(OUT["nodeData/disk"+name])

@@ -17,7 +17,7 @@ from galacticus.constants import parsec,angstrom
 from galacticus.constants import mega,centi
 from galacticus.constants import Pi,speedOfLight
 from galacticus.constants import massAtomic,atomicMassHydrogen,massFractionHydrogen
-from galacticus.emissionLines.luminosities import EmissionLineLuminosity
+from galacticus.emissionLines.luminosities import EmissionLineLuminosity,ergPerSecond
 
 
 class TestLuminosities(unittest.TestCase):
@@ -96,31 +96,6 @@ class TestLuminosities(unittest.TestCase):
         self.assertRaises(RuntimeError,self.LINES.getContinuumLuminosityNames,name)
         name = "diskLineLuminosity:balmerAlpha6563"
         self.assertRaises(RuntimeError,self.LINES.getContinuumLuminosityNames,name)
-        return
-
-    def test_LuminositiesGetHydrogenGasDensity(self):
-        # Test computation of Hydrogen gas density
-        redshift = 1.0
-        OUT = self.LINES.galaxies.GH5Obj.selectOutput(redshift)
-        for comp in ["disk","spheroid"]:
-            gas = np.array(OUT["nodeData/"+comp+"MassGas"])
-            radius = np.array(OUT["nodeData/"+comp+"Radius"])
-            volume = np.copy((radius*mega*parsec/centi)**3)
-            np.place(volume,volume==0.0,np.nan)
-            mass = np.copy(gas)*massSolar
-            np.place(mass,mass==0.0,np.nan)
-            density = np.copy(mass/volume)
-            density *= massFractionHydrogen
-            density /= (4.0*Pi*massAtomic*atomicMassHydrogen)
-            density = np.log10(density)
-            result = self.LINES.getHydrogenGasDensity(redshift,comp)
-            for d,r in zip(density,result):
-                self.assertEqual(np.isnan(d),np.isnan(r))
-                if not np.isnan(d):
-                    diff = np.fabs(d-r)
-                    self.assertLessEqual(diff,1.0e-6)
-        self.assertRaises(ValueError,self.LINES.getHydrogenGasDensity,\
-                              redshift,"total")
         return
 
     def test_LuminositiesGetIonizingFluxHydrogen(self):
@@ -259,10 +234,69 @@ class TestLuminosities(unittest.TestCase):
             self.assertRaises(RuntimeError,self.LINES.matches,name,raiseError=True)
         return
 
+    def test_LuminositiesGet(self):
+        # Check bad names        
+        redshift = 1.0
+        name = "totalLineLuminosity:balmerAlpha6563:rest:z1.000"
+        with self.assertRaises(RuntimeError):
+            DATA = self.LINES.get(name,redshift)
+        # Check values
+        zStr = self.LINES.galaxies.GH5Obj.getRedshiftString(redshift)
+        component = "disk"
+        for line in self.LINES.CLOUDY.listAvailableLines()[:1]:
+            name = component+"LineLuminosity:"+line+":rest:"+zStr                        
+            LymanName,HeliumName,OxygenName = self.LINES.getContinuumLuminosityNames(name)
+            FLUXES = self.LINES.getContinuumLuminosities(name,redshift)
+            if any([FLUXES[name] is None for name in FLUXES.keys()]):
+                warnings.warn(funcname+"(): Unable to compute emission line luminosity as one of the "+\
+                                  "continuum luminosities is missing. Returning None instance.")
+                luminosity = None
+            else:
+                metals = component+"GasMetallicity"
+                hydrogen = component+"HydrogenGasDensity"
+                GALS = self.LINES.galaxies.get(redshift,properties=[metals,hydrogen])
+                hydrogenGasDensity = np.log10(np.copy(GALS[hydrogen].data))
+                metallicity = np.copy(GALS[metals].data)
+                del GALS
+                ionizingFluxHydrogen = self.LINES.getIonizingFluxHydrogen(FLUXES[LymanName].data)
+                numberHIIRegion = self.LINES.getNumberHIIRegions(redshift,component)
+                np.place(numberHIIRegion,numberHIIRegion==0.0,np.nan)
+                ionizingFluxHydrogen -= np.log10(numberHIIRegion)
+                ionizingFluxHeliumToHydrogen = self.LINES.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[HeliumName].data)
+                ionizingFluxOxygenToHydrogen = self.LINES.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[OxygenName].data)
+                luminosity = np.copy(self.LINES.CLOUDY.interpolate(line,metallicity,hydrogenGasDensity,
+                                                                   ionizingFluxHydrogen,ionizingFluxHeliumToHydrogen,
+                                                                   ionizingFluxOxygenToHydrogen))
+                luminosityMultiplier = self.LINES.getLuminosityMultiplier(name,redshift)
+                luminosity *= (luminosityMultiplier*numberHIIRegion*erg/luminositySolar)
+                nanReplaceValue = rcParams.get("emissionLine","nanReplaceValue",fallback=None)
+                if nanReplaceValue is not None:
+                    nanMask = np.isnan(luminosity)
+                    np.place(luminosity,nanMask,float(nanReplaceValue))
+                    del nanMask
+            DATA = self.LINES.get(name,redshift)
+            if luminosity is None:
+                self.assertIsNone(DATA.data)
+            else:
+                diff = np.fabs(DATA.data-luminosity)
+                [self.assertLessEqual(d,1.0e-6) for d in diff if np.invert(np.isnan(d))]
+                maskD = np.isnan(DATA.data)
+                mask0 = np.isnan(luminosity)
+                [self.assertEqual(m,n) for m,n in zip(maskD,mask0)]
+        return
+
+    def test_ergPerSecond(self):
+        luminosity0 = np.random.rand(50)*4.0 + 3.0
+        luminosity0 = 10.0**luminosity0
+        # Check conversion
+        luminosity = np.log10(np.copy(luminosity0))
+        luminosity += np.log10(luminositySolar)
+        luminosity -= np.log10(erg)
+        luminosity = 10.0**luminosity
+        self.assertTrue(np.array_equal(luminosity,ergPerSecond(luminosity0)))
+        return
 
 
-
-            
 if __name__ == "__main__":
     unittest.main()
 

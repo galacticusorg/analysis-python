@@ -50,7 +50,7 @@ class TestHydrogenGasDensity(unittest.TestCase):
         for comp in ["disk","spheroid"]:
             name = comp + "HydrogenGasDensity"
             M = self.DENS.parseDatasetName(name)
-            self.assertTrue(M is not None)
+            self.assertIsNotNone(M)
             self.assertEqual(M.group('component'),comp)
         for name in ["HydrogenGasDensity",
                      "diskGasDensity",
