@@ -203,7 +203,8 @@ class EmissionLineLuminosity(Property):
         np.place(XFlux,XFlux==0.0,np.nan)
         return np.log10(XFlux/LymanFlux)
 
-    def getMassHIIRegions(self):
+    @classmethod
+    def getMassHIIRegions(cls):
         """
         EmissionLineLuminosity.getMassHIIRegion(): Return the mass of HII regions, as stored in 
                                                    the configuration parameters. Default value 
@@ -215,10 +216,11 @@ class EmissionLineLuminosity(Property):
                mass -- Mass of HII regions in Solar masses.
 
         """
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
         return rcParams.getfloat("emissionLine","massHIIRegion",fallback=7.5e3)
     
-    def getLifetimeHIIRegions(self):
+    @classmethod
+    def getLifetimeHIIRegions(cls):
         """
         EmissionLineLuminosity.getLifetimeHIIRegion(): Return the lifetime of HII regions, as stored in 
                                                        the configuration parameters. Default value is 
@@ -230,7 +232,7 @@ class EmissionLineLuminosity(Property):
                mass -- Lifetime of HII regions in Gyrs.
 
         """
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
         return rcParams.getfloat("emissionLine","lifetimeHIIRegion",fallback=1.0e-3)
 
     def getNumberHIIRegions(self,redshift,component):

@@ -10,6 +10,7 @@ from ..inclination import Inclination
 from ..ionizingContinuua import IonizingContinuum
 from ..emissionLines.luminosities import EmissionLineLuminosity
 from ..emissionLines.fullWidthHalfMaximum import FullWidthHalfMaximum
+from ..hydrogenGasDensity import HydrogenGasDensity
 from ..dust.dustCompendium import DustCompendium
 from ..dust.dustParameters import DustParameters
 from ..dust.dustScreens import DustScreen
