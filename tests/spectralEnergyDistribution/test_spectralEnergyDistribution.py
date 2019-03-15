@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import sys,re,glob,fnmatch
+import sys,re,glob,fnmatch,os
 import numpy as np
 import unittest
 import warnings

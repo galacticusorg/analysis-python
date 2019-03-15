@@ -271,8 +271,6 @@ class GalacticusHDF5(HDF5):
         # Select epoch closest to specified redshift
         iselect = np.argmin(np.fabs(self.outputs.z-z))
         name = self.outputs.name[iselect]
-        if isinstance(name,bytes):
-            name = name.decode('UTF-8')
         return removeByteStrings(name)
 
 
@@ -290,7 +288,7 @@ class GalacticusHDF5(HDF5):
 
         """        
         pattern = addByteStrings("Output"+outputName.replace("Output",""))
-        i = int(np.argwhere(self.outputs.name==pattern))
+        i = int(np.argwhere(self.outputs.name==pattern)[0][0])
         return self.outputs.z[i]
 
 
@@ -344,9 +342,15 @@ class GalacticusHDF5(HDF5):
         if ngals == 0:
             outputName = self.getOutputName(z)
             iz = self.getOutputRedshift(outputName)
-            warnings.warn(funcname+"(): Output "+outputName+" (z="+str(iz)+") does not contain any galaxies!")
+            warnings.warn(funcname+"(): Output '"+outputName+"' (z="+str(iz)+") does not contain any galaxies!")
             return None
         dsets = fnmatch.filter(self.availableDatasets(z),"*z[0-9].[0-9]*")
+        if len(dsets) == 0:
+            outputName = self.getOutputName(z)
+            iz = self.getOutputRedshift(outputName)
+            warnings.warn(funcname+"(): Output '"+outputName+"' (z="+str(iz)+
+                          ") does not contain any datsets containing a redshift string!")
+            return None
         return fnmatch.filter(dsets[0].split(":"),"z*")[0]
     
     def nearestRedshift(self,z):
