@@ -2,10 +2,10 @@
 
 import sys,fnmatch
 import numpy as np
+import warnings
 from .datasets import Dataset
 from .constants import speedOfLight
 from .properties.manager import Property
-
 
 @Property.register_subclass('redshift')
 class Redshift(Property):
@@ -30,7 +30,7 @@ class Redshift(Property):
         self.availableOptions = ["snapshotRedshift","observedRedshift","redshift"]
         return
 
-    def matches(self,propertyName,redshift=None):
+    def matches(self,propertyName,redshift=None,raiseError=False):
         """
         Redshift.matches(): Returns boolean to indicate whether this class 
                             can process the specified property.
@@ -46,7 +46,14 @@ class Redshift(Property):
                             process this property.
 
         """
-        return propertyName in self.availableOptions
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        match = propertyName in self.availableOptions
+        if raiseError and not match:
+            msg = funcname+"(): Specified property '"+propertyName+\
+                "' is not a valid redshift option. Available options: "+\
+                ", ".join(["'"+opt+"'" for opt in self.availableOptions])+"."
+            raise RuntimeError(msg)
+        return match
 
     def getObservedRedshift(self,redshift):
         """
@@ -66,13 +73,15 @@ class Redshift(Property):
                           lightcone information can be located in the HDF5 file.
 
         """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if not self.galaxies.GH5Obj.galaxyDatasetExists("lightconeRedshift",redshift):
+            warnings.warn(funcname+"(): Unable to compute observed redshift as not a lightcone output.")
             return None
         # Create Dataset instance 
-        DATA = Dataset(name="observedRedshift")
+        DATA = Dataset(name="observedRedshift")        
         # Extract necessary lightcone properties
         required = ["lightconeRedshift","lightconePositionX","lightconePositionY","lightconePositionZ",\
-                        "lighconeVelocityX","lighconeVelocityY","lighconeVelocityZ"]
+                        "lightconeVelocityX","lightconeVelocityY","lightconeVelocityZ"]
         GALS = self.galaxies.get(redshift,properties=required)        
         X = GALS["lightconePositionX"].data
         Y = GALS["lightconePositionY"].data
@@ -106,6 +115,7 @@ class Redshift(Property):
                           snapshot redshift information.
 
         """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         DATA = Dataset()
         DATA.name = "snapshotRedshift"
         zsnap = self.galaxies.GH5Obj.nearestRedshift(redshift)
@@ -114,6 +124,7 @@ class Redshift(Property):
         return DATA
 
     def getRedshift(self,redshift):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if self.galaxies.GH5Obj.galaxyDatasetExists("lightconeRedshift",redshift):
             name = "lightconeRedshift"
         else:
@@ -144,10 +155,7 @@ class Redshift(Property):
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        if not self.matches(propertyName):
-            msg = funcname+"(): Specified property '"+propertyName+"' is not a redshift."
-            msg = msg + "\n       Redshift options: "+", "+join(self.availableOptions)
-            raise RuntimeError(msg)
+        assert(self.matches(propertyName,raiseError=True))
         if propertyName == "snapshotRedshift":
             return self.getSnapshotRedshift(redshift)
         if propertyName == "observedRedshift":
