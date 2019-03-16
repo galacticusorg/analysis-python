@@ -10,7 +10,7 @@ from ..Cloudy import CloudyTable
 from ..constants import speedOfLight,angstrom
 from . import getSpectralEnergyDistributionWavelengths,parseDatasetName
 
-class sedEmissionLines(object):
+class EmissionLines(object):
 
     def __init__(self,galaxies):
         self.galaxies = galaxies

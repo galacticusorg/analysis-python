@@ -14,7 +14,7 @@ from galacticus.data import GalacticusData
 from galacticus.datasets import Dataset
 from galacticus.spectralEnergyDistribution import parseDatasetName
 from galacticus.spectralEnergyDistribution import getSpectralEnergyDistributionWavelengths
-from galacticus.spectralEnergyDistribution.emissionLines import sedEmissionLines
+from galacticus.spectralEnergyDistribution.emissionLines import EmissionLines
 
 class Test_sedEmissionLines(unittest.TestCase):
 
@@ -34,7 +34,7 @@ class Test_sedEmissionLines(unittest.TestCase):
         # Initialize the SED continuum class.
         GH5 = GalacticusHDF5(self.snapshotFile,'r')
         GALS = Galaxies(GH5Obj=GH5)
-        self.LINES = sedEmissionLines(GALS)
+        self.LINES = EmissionLines(GALS)
         return
 
     @classmethod

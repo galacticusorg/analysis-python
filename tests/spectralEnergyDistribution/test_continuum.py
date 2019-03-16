@@ -13,10 +13,10 @@ from galacticus.io import GalacticusHDF5
 from galacticus.data import GalacticusData
 from galacticus.spectralEnergyDistribution import parseDatasetName
 from galacticus.spectralEnergyDistribution import getSpectralEnergyDistributionWavelengths
-from galacticus.spectralEnergyDistribution.continuum import sedContinuum
+from galacticus.spectralEnergyDistribution.continuum import Continuum
 
 
-class Test_sedContinuum(unittest.TestCase):
+class Test_Continuum(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
@@ -34,7 +34,7 @@ class Test_sedContinuum(unittest.TestCase):
         # Initialize the SED continuum class.
         GH5 = GalacticusHDF5(self.snapshotFile,'r')
         GALS = Galaxies(GH5Obj=GH5)
-        self.SED = sedContinuum(GALS)
+        self.SED = Continuum(GALS)
         return
             
     @classmethod
@@ -46,7 +46,7 @@ class Test_sedContinuum(unittest.TestCase):
             os.remove(self.snapshotFile)
         return
         
-    def test_sedContinuumIdentifyTopHatLuminosityDatasets(self):
+    def test_ContinuumIdentifyTopHatLuminosityDatasets(self):
         # Check parse errors
         with self.assertRaises(ParseError):
             z = 1.000
@@ -79,7 +79,7 @@ class Test_sedContinuum(unittest.TestCase):
             self.assertEqual(tophats,totals)
         return
 
-    def test_sedContinuumExtractTopHatWavelengths(self):
+    def test_ContinuumExtractTopHatWavelengths(self):
         # Test correct extraction of wavelengths of top hat filters
         wavelengths = np.linspace(900.0,2000.0,100)
         topHats = ["spheroidLuminositiesStellar:adaptiveResolutionTopHat_"+str(w)+"_500:rest:z1.000"
@@ -102,7 +102,7 @@ class Test_sedContinuum(unittest.TestCase):
         self.assertListEqual(tHs,topHats0)
         return
 
-    def test_sedContinuumSelectWavelengthRange(self):
+    def test_ContinuumSelectWavelengthRange(self):
         # Test selection of correct wavelentth range
         wavelengths = np.linspace(900.0,2000.0,100)
         topHats = ["spheroidLuminositiesStellar:adaptiveResolutionTopHat_"+str(w)+"_500:rest:z1.000"
@@ -162,8 +162,7 @@ class Test_sedContinuum(unittest.TestCase):
             self.assertListEqual(tHs,list(np.array(topHats0)[mask]))
         return
 
-        
-    def test_sedContinuumGetContinuumLuminosities(self):
+    def test_ContinuumGetContinuumLuminosities(self):
         # Test extraction of top hat luminosities
         # First compute luminosities manually
         redshift = 1.0
@@ -185,7 +184,7 @@ class Test_sedContinuum(unittest.TestCase):
         self.assertTrue(np.alltrue(waves==wavelengths))        
         return
     
-    def test_sedContinuumInterpolateContinuum(self):
+    def test_ContinuumInterpolateContinuum(self):
         nwav = 100
         wavelengths = np.linspace(1000,2000,nwav)
         ngals = 200
@@ -199,7 +198,7 @@ class Test_sedContinuum(unittest.TestCase):
         self.assertEqual(newLums.shape[1],len(newWaves))
         return
 
-    def test_sedContinuumAddContinuumNoise(self):
+    def test_ContinuumAddContinuumNoise(self):
         nwav = 100
         ngals = 200
         wavelengths = np.linspace(1000,2000,nwav)
@@ -214,7 +213,7 @@ class Test_sedContinuum(unittest.TestCase):
         self.assertEqual(continuum.shape[1],nwav)
         return
         
-    def test_sedContinuumGet(self):
+    def test_ContinuumGet(self):
         # Test get continuum SED        
         redshift = 1.0
         ngals = self.SED.galaxies.GH5Obj.countGalaxiesAtRedshift(redshift)
@@ -240,6 +239,17 @@ class Test_sedContinuum(unittest.TestCase):
         self.assertEqual(cont.shape[1],len(waves))                
         self.assertFalse(np.alltrue(luminosity==cont))        
         return
+
+    def test_ContinuumGetAvailableWavelengthRange(self):
+        z = 1.0
+        zStr = self.SED.galaxies.GH5Obj.getRedshiftString(z)
+        sedName = "diskSpectralEnergyDistribution:5000.0_8000.0_100.0:rest:"+zStr
+        topHats = self.SED.identifyTopHatLuminosityDatasets(z,sedName)        
+        wavelengths,topHats = self.SED.extractTopHatWavelengths(topHats)
+        self.assertTrue(np.array_equal(wavelengths,self.SED.getAvailableWavelengthRange(z,sedName)))
+        return
+        
+
         
 
 if __name__ == "__main__":

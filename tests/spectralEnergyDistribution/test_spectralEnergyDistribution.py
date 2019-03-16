@@ -15,8 +15,8 @@ from galacticus.data import GalacticusData
 from galacticus.datasets import Dataset
 from galacticus.constants import megaParsec,centi,jansky,erg,luminosityAB,Pi
 from galacticus.spectralEnergyDistribution import parseDatasetName
-from galacticus.spectralEnergyDistribution.continuum import sedContinuum
-from galacticus.spectralEnergyDistribution.emissionLines import sedEmissionLines
+from galacticus.spectralEnergyDistribution.continuum import Continuum
+from galacticus.spectralEnergyDistribution.emissionLines import EmissionLines
 from galacticus.spectralEnergyDistribution.spectralEnergyDistribution import SpectralEnergyDistribution
 
 
@@ -119,8 +119,8 @@ class Test_SpectralEnergyDistribution(unittest.TestCase):
         zStr = self.SED.galaxies.GH5Obj.getRedshiftString(redshift)
         # Test instance with emission lines
         sedName = "diskSpectralEnergyDistribution:5000.0_8000.0_100.0:rest:"+zStr
-        LINES = sedEmissionLines(self.SED.galaxies)
-        CONT = sedContinuum(self.SED.galaxies)
+        LINES = EmissionLines(self.SED.galaxies)
+        CONT = Continuum(self.SED.galaxies)
         wave,C = CONT.get(sedName,redshift)
         L = LINES.get(sedName,redshift)
         sedTrue = self.SED.convertToMicroJanskies(redshift,C+L)
@@ -129,8 +129,8 @@ class Test_SpectralEnergyDistribution(unittest.TestCase):
         [self.assertLessEqual(d,1.0e-6) for d in diff if d is not np.nan]        
         # Test instance with no emission lines
         sedName = "diskSpectralEnergyDistribution:5000.0_8000.0_100.0:rest:"+zStr+":noLines"
-        LINES = sedEmissionLines(self.SED.galaxies)
-        CONT = sedContinuum(self.SED.galaxies)
+        LINES = EmissionLines(self.SED.galaxies)
+        CONT = Continuum(self.SED.galaxies)
         wave,C = CONT.get(sedName,redshift)
         sedTrue = self.SED.convertToMicroJanskies(redshift,C)
         DATA = self.SED.get(sedName,redshift)

@@ -15,7 +15,7 @@ from ..constants import angstrom,speedOfLight
 from ..constants import plancksConstant
 from . import getSpectralEnergyDistributionWavelengths,parseDatasetName
 
-class sedContinuum(object):
+class Continuum(object):
     
     def __init__(self,galaxies):
         self.galaxies = galaxies
@@ -23,7 +23,6 @@ class sedContinuum(object):
 
     def identifyTopHatLuminosityDatasets(self,redshift,propertyName):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        dsets = self.galaxies.GH5Obj.availableDatasets(redshift)
         MATCH = parseDatasetName(propertyName)
         if MATCH is None:
             raise ParseError(funcname+"(): Cannot parse SED dataset name'" +propertyName+"'.")        
@@ -38,6 +37,7 @@ class sedContinuum(object):
         if MATCH.group("dust") is not None:
             search = search+MATCH.group("dust")
         # Search for filters
+        dsets = self.galaxies.GH5Obj.availableDatasets(redshift)
         topHats = fnmatch.filter(dsets,search)
         # If 'total', replace compoent
         if fnmatch.fnmatch(MATCH.group("component"),"total"):
@@ -156,6 +156,11 @@ class sedContinuum(object):
             topHats = list(np.array(topHats)[isort])
         return wavelengths,topHats
 
+    def getAvailableWavelengthRange(self,redshift,propertyName):        
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        topHats = self.identifyTopHatLuminosityDatasets(redshift,propertyName)
+        wavelengths,topHats = self.extractTopHatWavelengths(topHats)
+        return wavelengths
     
         
 

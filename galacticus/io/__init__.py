@@ -109,6 +109,35 @@ class GalacticusHDF5(HDF5):
             return []
         return list(map(str,out["nodeData"].keys()))
 
+    def availableFilters(self,z,frame):
+        """
+        GalacticusHDF5.availableFilters(): Returns a list of filters available in the snapshot
+                                           output that is closest to specified redshift.
+                             
+        USAGE:  filters = GalacticusHDF5.availableFilters(z,frame)
+
+              INPUTS
+                      z  -- Redshift value to query. [Default=None]
+                  frame  -- The frame of the filters to list ('rest' or 'observed').
+
+              OUTPUTS
+                 filters -- List of filters available in this output.
+
+        """
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        try:
+            z = float(z)
+        except ValueError:
+            raise ValueError(funcname+"(): Argument must be a singular redshift value.")    
+        if frame.lower() not in ["rest","observed"]:
+            raise ValueError(funcname+"(): 'frame' must be 'rest' or 'observed'.")
+        dsets = fnmatch.filter(self.availableDatasets(z),"*LuminositiesStellar*:"+frame.lower()+":*")
+        if len(dsets)==0:
+            filters = []
+        else:  
+            filters = list(np.unique(dsets))
+        filters.sort()
+        return removeByteStrings(filters)
 
     def countGalaxies(self,z=None):
         """
@@ -224,7 +253,6 @@ class GalacticusHDF5(HDF5):
         dset = self.fileObj["Outputs/"+output+"/nodeData/"+datasetName]
         return str(dset.dtype)
     
-
     def getMergerTreeWeight(self,z):
         """
         GalacticusHDF5.getMergerTreeWeight(): Return the merger tree weighting to apply to

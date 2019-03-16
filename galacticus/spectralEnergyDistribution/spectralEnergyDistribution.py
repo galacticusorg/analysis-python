@@ -8,8 +8,8 @@ from ..datasets import Dataset
 from ..properties.manager import Property
 from ..constants import megaParsec,centi,Pi,jansky,erg,luminosityAB,micro,angstrom
 from . import parseDatasetName,getSpectralEnergyDistributionWavelengths
-from .continuum import sedContinuum
-from .emissionLines import sedEmissionLines
+from .continuum import Continuum
+from .emissionLines import EmissionLines
 
 @Property.register_subclass('spectralEnergyDistribution')
 class SpectralEnergyDistribution(Property):
@@ -19,8 +19,8 @@ class SpectralEnergyDistribution(Property):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         self.galaxies = galaxies
         self.verbose = verbose
-        self.Continuum = sedContinuum(self.galaxies)
-        self.EmissionLines = sedEmissionLines(self.galaxies)
+        self.Continuum = Continuum(self.galaxies)
+        self.EmissionLines = EmissionLines(self.galaxies)
         return
 
     def matches(self,propertyName,redshift=None,raiseError=False):
