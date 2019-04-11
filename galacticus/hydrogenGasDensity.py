@@ -51,9 +51,9 @@ class HydrogenGasDensity(Property):
         GALS = self.galaxies.get(redshift,properties=[gas,radius])
         # Compute surface density in Mpc**2
         area = Pi*np.copy(GALS[radius].data)**2
-        np.place(area,area==0.0,np.nan)
-        densitySurfaceGas = GALS[gas].data/area
-        np.place(densitySurfaceGas,densitySurfaceGas==0.0,np.nan)
+        densitySurfaceGas = np.zeros_like(GALS[radius].data)
+        mask = area>0.0
+        densitySurfaceGas[mask] = np.copy(GALS[gas].data[mask]/area[mask])
         # Select method for computing density (central or mass-weighted)
         method = rcParams.get("hydrogenGasDensity","densityMethod",fallback="central")      
         if method.lower() == "central":

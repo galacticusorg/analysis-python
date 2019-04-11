@@ -17,7 +17,6 @@ from galacticus.hydrogenGasDensity import HydrogenGasDensity
 
 class TestHydrogenGasDensity(unittest.TestCase):
     
-
     @classmethod
     def setUpClass(self):
         # Locate the dynamic version of the galacticus.snapshotExample.hdf5 file.
@@ -100,9 +99,9 @@ class TestHydrogenGasDensity(unittest.TestCase):
             radius = component+"Radius"
             GALS = self.DENS.galaxies.get(z,properties=[gas,radius])
             area = Pi*np.copy(GALS[radius].data)**2
-            np.place(area,area==0.0,np.nan)
-            densitySurfaceGas = GALS[gas].data/area
-            np.place(densitySurfaceGas,densitySurfaceGas==0.0,np.nan)
+            densitySurfaceGas = np.zeros_like(GALS[radius].data)
+            mask = area>0.0
+            densitySurfaceGas[mask] = np.copy(GALS[gas].data[mask]/area[mask])
             if method.lower() == "central":
                 densitySurfaceGas /= 2.0
             elif method.lower() == "massweighted":

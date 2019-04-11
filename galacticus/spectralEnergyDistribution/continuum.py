@@ -34,14 +34,15 @@ class Continuum(object):
         search = search+":adaptiveResolutionTopHat_*_*:"
         search = search+MATCH.group("frame")
         search = search+MATCH.group("redshiftString")
-        if MATCH.group("dust") is not None:
-            search = search+MATCH.group("dust")
         # Search for filters
         dsets = self.galaxies.GH5Obj.availableDatasets(redshift)
         topHats = fnmatch.filter(dsets,search)
         # If 'total', replace compoent
         if fnmatch.fnmatch(MATCH.group("component"),"total"):
             topHats = [Filter.replace("disk","total") for Filter in topHats]
+        # Add on dust
+        if MATCH.group("dust") is not None:
+            topHats = [tH+MATCH.group("dust") for tH in topHats]
         return topHats
 
     @classmethod
@@ -75,6 +76,10 @@ class Continuum(object):
         # Build mask to remove top hat filters outside wavelength range. Allow for one top hat filter
         # outside minimum and maximum for purposes of interpolation)
         mask = np.logical_and(wavelengths>=lowerWavelength,wavelengths<=upperWavelength)
+        if not any(mask):
+            center = lowerWavelength + (upperWavelength-lowerWavelength)/2.0
+            iclose = np.argmin(np.fabs(wavelengths-center))
+            mask[iclose] = True
         upp = np.argwhere(mask).max() + 1
         if upp == len(mask):
             upp = len(mask)-1

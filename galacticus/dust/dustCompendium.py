@@ -153,7 +153,6 @@ class DustCompendium(Property):
                                                          PROPS["inclination"].data,
                                                          PROPS["diskDustOpticalDepthCentral:dustCompendium"].data,
                                                          opticalDepthMask=opticalDepthMask)
-
         # Raise warnings for any attenuations greater than unity
         if any(attenuations>1.0):
             msg = funcname+"(): Some of the computed attenuations are greater than unity. "+\

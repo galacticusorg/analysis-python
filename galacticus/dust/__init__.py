@@ -10,7 +10,7 @@ CLOUDY = CloudyTable()
 FILTERS = GalacticusFilter()
 
 def getEffectiveWavelength(regexMatch,redshift):    
-    # Identify whether luminosity is an emission line or a stellar luminosity                                                                                               
+    # Identify whether luminosity is an emission line or a stellar luminosity
     if regexMatch.group('filterName') is not None:
         FILTER = FILTERS.load(regexMatch.group('filterName').replace(":",""))
         wavelength = np.ones_like(redshift)*float(FILTER.effectiveWavelength)
@@ -20,3 +20,4 @@ def getEffectiveWavelength(regexMatch,redshift):
         lineName = regexMatch.group("lineName")
         wavelength = np.ones_like(redshift)*float(CLOUDY.getWavelength(lineName))
     return wavelength
+

@@ -5,7 +5,7 @@ import numpy as np
 import unittest
 from .datasets import Dataset
 from .properties.manager import Property
-from .constants import metallicitySolar
+from .constants import metallicitySolar,mega,massSolar,parsec
 
 
 @Property.register_subclass('metallicity')
@@ -47,7 +47,7 @@ class Metallicity(Property):
         searchString = "^(?P<component>disk|spheroid|total)(?P<phase>Gas|Stellar)Metallicity$"
         return re.search(searchString,datasetName)
 
-    def matches(self,propertyName,redshift=None):
+    def matches(self,propertyName,redshift=None,raiseError=False):
         """
         Metallicity.matches(): Returns boolean to indicate whether this class can process
                                the specified property.
@@ -64,8 +64,15 @@ class Metallicity(Property):
                               this property.
 
         """
-        if self.parseDatasetName(propertyName):
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        MATCH = self.parseDatasetName(propertyName)
+        if MATCH is not None:
             return True
+        if raiseError:
+            msg = funcname+"(): Specified property '"+propertyName+\
+                "' is not a valid metallictiy dataset name. "+\
+                "Syntax is: (disk|spheroid|total)(Gas|Stellar)Metallicity."
+            raise RuntimeError(msg)
         return False
 
     def get(self,propertyName,redshift):
@@ -94,94 +101,90 @@ class Metallicity(Property):
         massName = MATCH.group('component')+"Mass"+MATCH.group('phase')
         metalsName = MATCH.group('component')+"Abundances"+MATCH.group('phase')+"Metals"
         GALS = self.galaxies.get(redshift,properties=[massName,metalsName])
-        # Convert any zero values to NaN
+        # Convert any values with zero gas mass to avoid divide by zero
         mass = np.copy(GALS[massName].data)
-        np.place(mass,mass==0.0,np.nan)
         abundance = np.copy(GALS[metalsName].data)
-        np.place(abundance,abundance==0.0,np.nan)
+        metallicity = np.zeros_like(mass)
+        mask = mass>0.0
+        metallicity[mask] = np.copy(abundance[mask]/mass[mask])
         # Clear GALS from memory
-        del GALS
+        del GALS,mass,abundance
         # Compute metallicity
         DATA = Dataset(name=propertyName)
-        DATA.data = np.copy(np.log10(abundance/mass))
-        DATA.data -= np.log10(metallicitySolar)
+        DATA.data = np.copy(metallicity)
+        DATA.data /= metallicitySolar
+        del metallicity
         return DATA
-    
 
-class UnitTest(unittest.TestCase):
-    
-    @classmethod
-    def setUpClass(self):
-        from .galaxies import Galaxies
-        from .io import GalacticusHDF5
-        from .data import GalacticusData
-        from shutil import copyfile
-        # Locate the dynamic version of the galacticus.snapshotExample.hdf5 file.
-        DATA = GalacticusData()
-        self.snapshotFile = DATA.searchDynamic("galacticus.snapshotExample.hdf5")
-        self.removeExample = False
-        # If the file does not exist, create a copy from the static version.
-        if self.snapshotFile is None:
-            self.snapshotFile = DATA.dynamic+"/examples/galacticus.snapshotExample.hdf5"
-            self.removeExample = True
-            if not os.path.exists(DATA.dynamic+"/examples"):
-                os.makedirs(DATA.dynamic+"/examples")
-            copyfile(DATA.static+"/examples/galacticus.snapshotExample.hdf5",self.snapshotFile)
-        # Initialize the Metallicity class.
-        GH5 = GalacticusHDF5(self.snapshotFile,'r')
-        GALS = Galaxies(GH5Obj=GH5)
-        self.METAL = Metallicity(GALS)
+
+
+@Property.register_subclass('metalsGasDensity')
+class MetalsGasDensity(Property):
+
+    def __init__(self,galaxies,verbose=False):
+        classname = self.__class__.__name__
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        self.galaxies = galaxies
+        self.verbose = verbose
         return
 
     @classmethod
-    def tearDownClass(self):
-        # Clear memory and close/delete files as necessary.
-        self.METAL.galaxies.GH5Obj.close()
-        del self.METAL
-        if self.removeExample:
-            os.remove(self.snapshotFile)
-        return
+    def parseDatasetName(cls,datasetName):
+        funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
+        # Construct search string to pass to regex
+        searchString = "^(?P<component>disk|spheroid)MetalsGasDensity$"
+        return re.search(searchString,datasetName)
+    
+    @classmethod
+    def matches(cls,propertyName,redshift=None,raiseError=False):
+        funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
+        MATCH = cls.parseDatasetName(propertyName)
+        if MATCH is not None:
+            return True
+        if raiseError:
+            msg = funcname+"(): Specified property '"+propertyName+\
+                "' is not a valid hydrogen gas density. "+\
+                "Syntax is (disk|spheroid)MetalsGasDensity."
+            raise RuntimeError(msg)
+        return False
 
-    def testMatches(self):
+    def getSurfaceDensityMetals(self,component,redshift):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        print("UNIT TEST: Metallicity: "+funcname)
-        print("Testing Metallicity.matches() function")
-        for component in ["disk","spheroid","total"]:
-            self.assertTrue(self.METAL.matches(component+"GasMetallicity"))        
-            self.assertTrue(self.METAL.matches(component+"StellarMetallicity"))        
-        self.assertFalse(self.METAL.matches("diskMetallicity"))
-        self.assertFalse(self.METAL.matches("totalMetallicity"))
-        self.assertFalse(self.METAL.matches("diskAbundanceMetals"))
-        self.assertFalse(self.METAL.matches("totalAbundanceMetals"))
-        print("TEST COMPLETE")
-        print("\n")
-        return
+        if component.lower() not in ["disk","spheroid"]:
+            raise ValueError(funcname+"(): requires either a 'disk' or 'spheroid' component.")
+        # Extract metal mass and galaxy radius
+        metals = component+"MassGas"
+        radius = component+"Radius"
+        GALS = self.galaxies.get(redshift,properties=[metals,radius])
+        # Compute surface density in pc**2
+        area = Pi*np.copy(mega*GALS[radius].data)**2
+        densitySurfaceMetals = np.zeros_like(GALS[radius].data)
+        mask = area>0.0
+        densitySurfaceMetals[mask] = np.copy(GALS[metals].data[mask]/area[mask])
+        # Select method for computing density (central or mass-weighted)
+        method = rcParams.get("hydrogenGasDensity","densityMethod",fallback="central")
+        if method.lower() == "central":
+            densitySurfaceGas /= 2.0
+        elif method.lower() == "massweighted":
+            densitySurfaceGas /= 8.0
+        else:
+            msg = funcname+"(): in rcParams hydrogenGasDensty/densityMethod "+\
+                "should be either 'central' of 'massWeighted'. Default=central."
+            raise ValueError(msg)
+        return densitySurfaceGas
 
-    def testGet(self):
+    def get(self,propertyName,redshift):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        print("UNIT TEST: Metallicity: "+funcname)
-        print("Testing Metallicity.get() function")
-        redshift = 1.0
-        self.assertRaises(RuntimeError,self.METAL.get,"aMissingProperty",redshift)
-        for component in ["disk","spheroid","total"]:
-            for phase in ["Gas","Stellar"]:
-                DATA = self.METAL.get(component+phase+"Metallicity",redshift)
-                self.assertEqual(DATA.name,component+phase+"Metallicity")
-                OUT = self.METAL.galaxies.GH5Obj.selectOutput(redshift)
-                properties = [component+"Mass"+phase,component+"Abundances"+phase+"Metals"]
-                GALS = self.METAL.galaxies.get(redshift,properties=properties)
-                mass = np.copy(GALS[component+"Mass"+phase].data)
-                np.place(mass,mass==0.0,np.nan)
-                abundance = np.copy(GALS[component+"Abundances"+phase+"Metals"].data)
-                np.place(abundance,abundance==0.0,np.nan)
-                metallicity = np.copy(np.log10(abundance/mass)) - np.log10(metallicitySolar)
-                for m,d in zip(metallicity,DATA.data):
-                    self.assertFalse(np.isinf(d))
-                    if np.isnan(m):
-                        self.assertTrue(np.isnan(d))
-                    else:
-                        diff = np.fabs(m-d)
-                        self.assertLessEqual(diff,1.0e-6)
-        print("TEST COMPLETE")
-        print("\n")
-        return
+        assert(self.matches(propertyName,raiseError=True))
+        # Extract information from property name
+        MATCH = self.parseDatasetName(propertyName)
+        component = MATCH.group('component')
+        # Create dataset
+        DATA = Dataset(name=propertyName)
+        attr = {"unitsInSI":massSolar/(mega*parsec)**2}
+        DATA.attr = attr
+        DATA.data = np.copy(self.getSurfaceDensityMetals(component,redshift))
+        return DATA
+
+
+

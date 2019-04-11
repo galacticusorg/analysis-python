@@ -77,6 +77,12 @@ class Test_Continuum(unittest.TestCase):
             tophats = self.SED.identifyTopHatLuminosityDatasets(z,name)
             totals = [filter.replace("disk","total") for filter in disks]
             self.assertEqual(tophats,totals)
+            # Test extraction of top hats with dust
+            dustString = ":dustCalzetti_Av2.3"
+            name = "totalSpectralEnergyDistribution:1000.0_2000.0_100.0:rest:z1.000"+dustString
+            tophats = self.SED.identifyTopHatLuminosityDatasets(z,name)
+            totals = [filter.replace("disk","total")+dustString for filter in disks]            
+            self.assertEqual(tophats,totals)
         return
 
     def test_ContinuumExtractTopHatWavelengths(self):
@@ -159,6 +165,21 @@ class Test_Continuum(unittest.TestCase):
             waves,tHs = self.SED.selectWavelengthRange(topHats,lowerWavelength,upperWavelength)
             self.assertEqual(waves.min(),wavelengths.min())
             self.assertEqual(waves.max(),wavelengths.max())
+            self.assertListEqual(tHs,list(np.array(topHats0)[mask]))
+            # Test: very narrow wavelength range (smaller than width of single filter)
+            lowerWavelength = 1500.0
+            upperWavelength = 1501.0
+            mask = np.logical_and(wavelengths>=lowerWavelength,wavelengths<=upperWavelength)
+            center = lowerWavelength + (upperWavelength-lowerWavelength)/2.0
+            iclose = np.argmin(np.fabs(wavelengths-center))
+            mask[iclose] = True
+            waves,tHs = self.SED.selectWavelengthRange(topHats,lowerWavelength,upperWavelength)
+            idx = np.argwhere(mask).min()-1
+            self.assertEqual(waves.min(),wavelengths[idx])
+            mask[idx] = True
+            idx = np.argwhere(mask).max()+1
+            self.assertEqual(waves.max(),wavelengths[idx])
+            mask[idx] = True
             self.assertListEqual(tHs,list(np.array(topHats0)[mask]))
         return
 

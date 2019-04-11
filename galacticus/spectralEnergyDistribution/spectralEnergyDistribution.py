@@ -6,7 +6,7 @@ import warnings
 from .. import rcParams
 from ..datasets import Dataset
 from ..properties.manager import Property
-from ..constants import megaParsec,centi,Pi,jansky,erg,luminosityAB,micro,angstrom
+from ..constants import megaParsec,centi,Pi,jansky,erg,luminosityAB,micro,angstrom,speedOfLight
 from . import parseDatasetName,getSpectralEnergyDistributionWavelengths
 from .continuum import Continuum
 from .emissionLines import EmissionLines
@@ -64,12 +64,17 @@ class SpectralEnergyDistribution(Property):
         sed = 10.0**sed
         return sed
 
+    @classmethod
+    def getFrequency(cls,wavelength):
+        frequency = speedOfLight/(wavelength*angstrom)
+        return frequency
+    
     def convertToMicroJanskies(self,redshift,sed):
         sed = self.ergPerSecond(sed)
         z = self.galaxies.get(redshift,properties=["redshift"])["redshift"].data
-        comDistance = self.galaxies.GH5Obj.cosmology.comoving_distance(z)*megaParsec/centi
-        comDistance = np.repeat(comDistance,sed.shape[1]).reshape(sed.shape)
-        sed /= 4.0*Pi*comDistance**2
+        lumDistance = self.galaxies.GH5Obj.cosmology.luminosity_distance(z)*megaParsec/centi
+        lumDistance = np.repeat(lumDistance,sed.shape[1]).reshape(sed.shape)
+        sed /= 4.0*Pi*lumDistance**2
         sed /= jansky
         sed *= 1.0e6
         return sed

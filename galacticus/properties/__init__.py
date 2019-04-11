@@ -5,7 +5,7 @@ from ..io.read import ReadHDF5
 from ..totals import Totals
 from ..bulgeToTotal import BulgeToTotal
 from ..redshift import Redshift
-from ..metallicity import Metallicity
+from ..metals import Metallicity,MetalsGasDensity
 from ..inclination import Inclination
 from ..ionizingContinuua import IonizingContinuum
 from ..emissionLines.luminosities import EmissionLineLuminosity
