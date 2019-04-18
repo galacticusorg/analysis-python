@@ -17,10 +17,7 @@ class CompendiumTable(object):
         classname = self.__class__.__name__
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         # Locate compendium attenuations
-        DATA = GalacticusData()
-        compendiumFile = rcParams.get("dustCompendium","attenuationsFile",
-                                      fallback="compendiumAttenuations.hdf5")
-        self.file = DATA.search(compendiumFile)
+        self.file = None
         # Determine whether to extrapolate optical depths
         self.extrapolateOpticalDepth = rcParams.getboolean(\
             "dustCompendium","extrapolateOpticalDepth",fallback=True)
@@ -47,6 +44,13 @@ class CompendiumTable(object):
         self.extrapolator1 = None
         return
 
+    def locateCompendiumFile(self):
+        DATA = GalacticusData()
+        compendiumFile = rcParams.get("dustCompendium","attenuationsFile",
+                                      fallback="compendiumAttenuations.hdf5")
+        self.file = DATA.search(compendiumFile)
+        return
+
     def tablesLoaded(self):
         notloaded = any([self.wavelengthTable is None,self.inclinationTable is None,
                          self.opticalDepthTable is None,self.spheroidScaleRadialTable is None,
@@ -64,6 +68,8 @@ class CompendiumTable(object):
 
     def load(self):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        if self.file is None:
+            self.locateCompendiumFile()
         FILE = HDF5(self.file,'r')
         self.wavelengthTable            = np.copy(FILE.readDataset('/wavelength'                       ))
         self.inclinationTable           = np.copy(FILE.readDataset('/inclination'                      ))

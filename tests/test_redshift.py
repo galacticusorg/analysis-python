@@ -29,7 +29,7 @@ class TestRedshift(unittest.TestCase):
             self.removeSnapshotExample = True
             if not os.path.exists(DATA.dynamic+"/examples"):
                 os.makedirs(DATA.dynamic+"/examples")
-            copyfile(DATA.static+"/examples/galacticus.snapshotExample.hdf5",self.lightconeFile)
+            copyfile(DATA.static+"/examples/galacticus.snapshotExample.hdf5",self.snapshotFile)
         if self.lightconeFile is None:
             self.lightconeFile = DATA.dynamic+"/examples/galacticus.lightconeExample.hdf5"
             self.removeLightconeExample = True

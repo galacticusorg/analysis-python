@@ -16,3 +16,5 @@ from ..dust.dustParameters import DustParameters
 from ..dust.dustScreens import DustScreen
 from ..dust.dustOpticalDepthCentral import DustOpticalDepthCentral
 from ..spectralEnergyDistribution.spectralEnergyDistribution import SpectralEnergyDistribution
+from ..sky import RightAscension
+from ..sky import Declination
