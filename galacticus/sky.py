@@ -10,6 +10,8 @@ from .properties.manager import Property
 
 def getRightAscension(X,Y,degrees=True):
     rightAscension = np.copy(np.arctan2(Y,X))
+    mask = rightAscension < 0.0
+    np.place(rightAscension,mask,2.0*Pi+rightAscension[mask])
     if degrees:
         rightAscension *= (180.0/Pi)
     return rightAscension
