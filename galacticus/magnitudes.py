@@ -56,17 +56,6 @@ class Magnitude(Property):
             raise RuntimeError(msg)
         return False
 
-
-    def checkFilterAvailable(self,filterName,frame,redshift):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        availableFilters = self.galaxies.GH5Obj.availableFilters(redshift,frame)
-        if filterName not in availableFilters:
-            z = self.galaxies.GH5Obj.getRedshift(redshift)
-            raise ValueError(funcname+"(): Filter '"+filterName+"' not found in list of available "+
-                             "for '"+frame+"' frame at redshift z="+str(z)+".")
-        return
-
-    
     @classmethod
     def getLuminosityName(cls,propertyName):
         """
@@ -74,8 +63,8 @@ class Magnitude(Property):
         """
         funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
         MATCH = cls.parseDatasetName(propertyName)
-        luminosityName = MATCH.group('component')+"LuminositiesStellar:"+MATCH.group("filter")+":"+MATCH.group("frame")+\
-            ":"+MATCH.group("redshiftString")
+        luminosityName = MATCH.group('component')+"LuminositiesStellar:"+MATCH.group("filter")+":"+\
+            MATCH.group("frame")+MATCH.group("redshiftString")
         if MATCH.group("recent") is not None: luminosityName = luminosityName + MATCH.group("recent")
         if MATCH.group("dust") is not None: luminosityName = luminosityName + MATCH.group("dust")
         return luminosityName
@@ -89,11 +78,12 @@ class Magnitude(Property):
         if MATCH.group("system") is None:
             return 0.0
         # AB magnitude
-        if MATCH.group("system") == "AB":
+        if MATCH.group("system") == ":AB":
             return 0.0
         # If get to here then is a Vega magnitude
         FILTER = self.GALFIL.load(MATCH.group("filter"))
         return FILTER.vegaOffset
+
 
     def get(self,propertyName,redshift):
         """                                 
@@ -102,8 +92,6 @@ class Magnitude(Property):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         assert(self.matches(propertyName,raiseError=True))
         MATCH = self.parseDatasetName(propertyName)
-        # Check filter is available to calculate magnitude
-        self.checkFilterAvailable(MATCH.group("filter"),MATCH.group("frame"),redshift)
         # Get luminosity dataset
         luminosityName = self.getLuminosityName(propertyName)
         # Read Galacticus properties
@@ -111,11 +99,13 @@ class Magnitude(Property):
         if MATCH.group("magnitude") == "Apparent":
             properties.append("redshift")
         GALS = self.galaxies.get(redshift,properties=properties)
+        if GALS[luminosityName] is None:
+            return None
         # Create dataset
         DATA = Dataset(name=propertyName)
         # Compute absolute magnitude
-        zeroCorrection = rcParams.get("magnitude","zeroCorrection",fallback=1.0e-50)
-        DATA.data = -2.5*np.log10(GALS[luminosityName].data+1.0e-40)
+        zeroCorrection = rcParams.getfloat("magnitude","zeroCorrection",fallback=1.0e-50)
+        DATA.data = -2.5*np.log10(GALS[luminosityName].data+zeroCorrection)
         # Convert to Vega magnitudes if required        
         DATA.data += self.getVegaOffset(propertyName)
         # Convert to apparent magnitude if required
