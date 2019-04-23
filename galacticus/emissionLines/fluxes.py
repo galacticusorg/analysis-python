@@ -67,7 +67,7 @@ class EmissionLineFlux(Property):
         searchString = searchString + lines + ":(?P<frame>rest|observed)"+\
             "(?P<filterName>:[^:]+)?"+\
             "(?P<redshiftString>:z(?P<redshift>[\d\.]+))"+\
-            "(?P<recent>:recent)?$"
+            "(?P<recent>:recent)?(?P<dust>:dust[^:]+)?$"
         return re.search(searchString,datasetName)
     
     def matches(self,propertyName,redshift=None,raiseError=False):
