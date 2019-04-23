@@ -9,6 +9,7 @@ from ..metals import Metallicity,MetalsGasDensity
 from ..inclination import Inclination
 from ..ionizingContinuua import IonizingContinuum
 from ..emissionLines.luminosities import EmissionLineLuminosity
+from ..emissionLines.fluxes import EmissionLineFlux
 from ..emissionLines.fullWidthHalfMaximum import FullWidthHalfMaximum
 from ..hydrogenGasDensity import HydrogenGasDensity
 from ..dust.dustCompendium import DustCompendium
@@ -19,3 +20,4 @@ from ..spectralEnergyDistribution.spectralEnergyDistribution import SpectralEner
 from ..sky import RightAscension
 from ..sky import Declination
 from ..magnitudes import Magnitude
+from ..nodes import HostNode
