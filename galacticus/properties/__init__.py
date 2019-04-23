@@ -18,3 +18,4 @@ from ..dust.dustOpticalDepthCentral import DustOpticalDepthCentral
 from ..spectralEnergyDistribution.spectralEnergyDistribution import SpectralEnergyDistribution
 from ..sky import RightAscension
 from ..sky import Declination
+from ..magnitudes import Magnitude
