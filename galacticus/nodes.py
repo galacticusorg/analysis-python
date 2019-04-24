@@ -8,18 +8,6 @@ from .datasets import Dataset
 from .properties.manager import Property
 
 
-def getHostIndex(nodeIsIsolated):
-    nodes = nodeIsIsolated[::-1]
-    def getIndex(values,i):
-        global previous
-        if values[i] == 1:
-            previous = len(values)-i-1
-        return previous
-    result = np.array([getIndex(nodes,i)for i in range(len(nodes))])
-    result = result[::-1]
-    return result
-
-
 @Property.register_subclass('hostNode')
 class HostNode(Property):
     
@@ -43,7 +31,15 @@ class HostNode(Property):
                 "Host node properties must end with ':host'."
             raise RuntimeError(msg)
         return False
-    
+
+    @classmethod
+    def getHostIndex(cls,nodeIsIsolated):
+        nodes = np.cumsum(nodeIsIsolated[::-1])[::-1]*-1
+        u,c = np.unique(nodes,return_counts=True)
+        i = np.argwhere(nodeIsIsolated==1)
+        index = np.repeat(i,c)
+        return index
+
     def get(self,propertyName,redshift):
         """                                                                                                                                                                                                                                        
         Return property of a host node.
@@ -58,7 +54,7 @@ class HostNode(Property):
         if GALS[nodeProperty] is None:
             return None
         # Locate indices of hosts
-        hostIndex = getHostIndex(GALS["nodeIsIsolated"].data)
+        hostIndex = self.getHostIndex(GALS["nodeIsIsolated"].data)
         # Construct Dataset object
         DATA = Dataset(name=propertyName)
         DATA.attr = copy.copy(GALS[nodeProperty].attr)
