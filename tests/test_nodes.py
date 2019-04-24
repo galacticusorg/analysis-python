@@ -69,6 +69,8 @@ class TestHostNode(unittest.TestCase):
         self.assertEqual(DATA.name,hostName)
         self.assertTrue(np.allclose(DATA.data,truth))
         self.assertEqual(DATA.attr["unitsInSI"],GALS[name].attr["unitsInSI"])
+        diff = DATA.data-GALS[name].data >= 0.0
+        self.assertTrue(all(diff))
         return
     
 if __name__ == "__main__":
