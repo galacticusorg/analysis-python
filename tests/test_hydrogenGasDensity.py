@@ -135,11 +135,13 @@ class TestHydrogenGasDensity(unittest.TestCase):
         densitySurfaceGas = self.DENS.getSurfaceDensityGas(component,z)
         massGMC = self.DENS.getMassGiantMolecularClouds()
         surfaceDensityCritical = self.DENS.getCriticalSurfaceDensityClouds()
-        massClouds = massGMC/(densitySurfaceGas/surfaceDensityCritical)
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore")
-            densitySurfaceClouds = np.maximum(densitySurfaceGas,surfaceDensityCritical)
-        densityHydrogen = (3.0/4.0)*np.sqrt(Pi)/np.sqrt(massClouds)
+        massClouds = np.zeros_like(densitySurfaceGas)
+        mask = densitySurfaceGas > 0.0
+        massClouds[mask] = massGMC/(densitySurfaceGas[mask]/surfaceDensityCritical)
+        densitySurfaceClouds = np.maximum(densitySurfaceGas,surfaceDensityCritical)
+        densityHydrogen = np.zeros_like(massClouds)
+        mask = massClouds > 0.0
+        densityHydrogen[mask] = (3.0/4.0)*np.sqrt(Pi)/np.sqrt(massClouds[mask])
         densityHydrogen *= densitySurfaceClouds**1.5
         densityHydrogen *= (centi/(mega*parsec))**3
         densityHydrogen *= massFractionHydrogen*massSolar

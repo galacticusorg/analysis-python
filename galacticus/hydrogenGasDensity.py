@@ -85,15 +85,19 @@ class HydrogenGasDensity(Property):
         # Compute mass in GMCs
         massGMC = self.getMassGiantMolecularClouds()
         surfaceDensityCritical = self.getCriticalSurfaceDensityClouds()
-        massClouds = massGMC/(densitySurfaceGas/surfaceDensityCritical)
+        massClouds = np.zeros_like(densitySurfaceGas)
+        mask = densitySurfaceGas > 0.0
+        massClouds[mask] = massGMC/(densitySurfaceGas[mask]/surfaceDensityCritical)
         # Set surface density of clouds in Mpc**-2
         densitySurfaceClouds = np.maximum(densitySurfaceGas,surfaceDensityCritical)
         # Compute hydrogen density
-        densityHydrogen = (3.0/4.0)*np.sqrt(Pi)/np.sqrt(massClouds)
+        densityHydrogen = np.zeros_like(massClouds)
+        mask = massClouds > 0.0
+        densityHydrogen[mask] = (3.0/4.0)*np.sqrt(Pi)/np.sqrt(massClouds[mask])
         densityHydrogen *= densitySurfaceClouds**1.5
         densityHydrogen *= (centi/(mega*parsec))**3
         densityHydrogen *= massFractionHydrogen*massSolar
-        densityHydrogen /= (massAtomic*atomicMassHydrogen)
+        densityHydrogen /= (massAtomic*atomicMassHydrogen)        
         # Create dataset
         DATA = Dataset(name=propertyName)
         attr = {"unitsInSI":centi**-3}
@@ -101,6 +105,10 @@ class HydrogenGasDensity(Property):
         attr["criticalSurfaceDensityClouds"] = surfaceDensityCritical
         DATA.attr = attr
         DATA.data = np.copy(densityHydrogen)
+        # Check if zero correction to be added
+        zeroCorrection = rcParams.get("hydrogenGasDensity","zeroCorrection",fallback=None)
+        if zeroCorrection is not None:
+            DATA.data += float(zeroCorrection)
         del densityHydrogen,massClouds,densitySurfaceGas,densitySurfaceClouds
         return DATA
 
