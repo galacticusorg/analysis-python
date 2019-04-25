@@ -13,6 +13,9 @@ from .constants import massAtomic,atomicMassHydrogen,massFractionHydrogen
 
 @Property.register_subclass('hydrogenGasDensity')
 class HydrogenGasDensity(Property):
+    """
+    Compute the hydrogen gas density for a galaxy.
+    """
     
     def __init__(self,galaxies,verbose=False):
         classname = self.__class__.__name__
@@ -75,6 +78,9 @@ class HydrogenGasDensity(Property):
         return rcParams.getfloat("hydrogenGasDensity","surfaceDensityCritical",fallback=8.5e13)
                 
     def get(self,propertyName,redshift):
+        """
+
+        """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         assert(self.matches(propertyName,raiseError=True))
         # Extract information from property name

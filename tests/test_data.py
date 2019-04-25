@@ -10,29 +10,14 @@ import sys,os,fnmatch
 import warnings
 from shutil import copyfile
 from galacticus import rcParams
-from galacticus.data import locateDatasetsRepository
 from galacticus.data import recursiveGlob
 from galacticus.data import GalacticusData
-
-
-class TestLocateDatasetsRepository(unittest.TestCase):
-    
-    def test_LocateDatasetsRepository(self):        
-        with patch("galacticus.rcParams.get") as mocked_rc:
-            mocked_rc.return_value = None
-            with self.assertRaises(RuntimeError):
-                locateDatasetsRepository()
-            mocked_rc.return_value = "/home/Galacticus/datasets"
-            path = locateDatasetsRepository()
-            self.assertIsNotNone(path)
-            self.assertEqual(path,"/home/Galacticus/datasets/")
-        return
 
     
 class TestRecursiveGlob(unittest.TestCase):
     
     def test_RecursiveGlob(self):        
-        path = locateDatasetsRepository()
+        path = GalacticusData.locateDatasetsRepository()
         result = recursiveGlob(path,"SDSS_r.xml")
         self.assertEqual(len(result),1)
         self.assertTrue(result[0].endswith("datasets/static/filters/SDSS_r.xml"))
@@ -44,7 +29,7 @@ class TestRecursiveGlob(unittest.TestCase):
 class TestGalacticusData(unittest.TestCase):
     
     def test_GalacticusDataInit(self):
-        with patch("galacticus.data.locateDatasetsRepository") as mocked_locate:
+        with patch("galacticus.data.GalacticusData.locateDatasetsRepository") as mocked_locate:
             mocked_locate.return_value = "None"
             with self.assertRaises(RuntimeError):
                 DATA = GalacticusData()
@@ -54,6 +39,18 @@ class TestGalacticusData(unittest.TestCase):
         DATA = GalacticusData()
         self.assertIsInstance(DATA,GalacticusData)
         return
+
+    def test_LocateDatasetsRepository(self):        
+        with patch("galacticus.rcParams.get") as mocked_rc:
+            mocked_rc.return_value = None
+            with self.assertRaises(RuntimeError):
+                GalacticusData.locateDatasetsRepository()
+            mocked_rc.return_value = "/home/Galacticus/datasets"
+            path = GalacticusData.locateDatasetsRepository()
+            self.assertIsNotNone(path)
+            self.assertEqual(path,"/home/Galacticus/datasets/")
+        return
+
 
     def test_GalacticusData_searchDirectory(self):
         DATA = GalacticusData()

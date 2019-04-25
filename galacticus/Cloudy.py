@@ -1,5 +1,12 @@
 #! /usr/bin/env python
 
+"""
+galacticus.Cloudy
+=================
+
+Classes for working with library of Cloudy output.
+"""
+
 import sys
 import fnmatch
 import numpy as np
@@ -14,14 +21,12 @@ from . import rcParams
 
 class CloudyEmissionLine(object):
     """
-    CloudyEmissionLine(): Class to store emission line data as read from 
-                          the Cloudy HDF5 file.
+    Class to store emission line data from a Cloudy HDF5 library.
                           
-    Attributes:
-            name         -- Name of emission line
-            wavelength   -- Wavelength of emission line as computed by Cloudy.
-            luminosities -- 5-dimensional array storing luminosities for this 
-                            emission line as function of various interpolants.
+    Arguments:
+        name (str) : Name of emission line
+        wavelength (float) : Wavelength of emission line as computed by Cloudy.
+        luminosities (array_like, {N,N,N,N,N}) : Five dimensional array storing luminosities for this emission line as function of various interpolants.
 
     """
     def __init__(self,name=None,wavelength=None,luminosities=None):
@@ -31,6 +36,9 @@ class CloudyEmissionLine(object):
         return
 
     def reset(self):
+        """
+        Reset the :class:`~galaticus.Cloudy.CloudyEmissionLine` instance.
+        """
         self.name = None
         self.wavelength = None
         self.luminosities = None
@@ -38,26 +46,18 @@ class CloudyEmissionLine(object):
 
 class CloudyTable(HDF5):
     """
-    CloudyTable: Class to read and interpolate over a table of luminosities output from Cloudy. The 
-                 class assumes that by default the Cloudy table is stored in a file with name 
-                 'emissionLines.hdf5'. The name of the file can be modified using the rcParams.
+    Read and interpolate over a library of luminosities output from Cloudy. The class assumes that
+    by default the Cloudy table **emissionLines.hdf5**. The name of the file can be modified using
+    **rcParams**, an instance of :class:`~galacticus.rcConfig`.
 
-    USAGE: CLOUDY = CloudyTable([verbose=False])
+    Arguments:
+        verbose (bool,optional) : Print additional information.
 
-         INPUT 
-             verbose -- Print additional information. [Default=False]
+    Attributes:
+        lines (dictionary) : Dictionary storing Cloudy emission line data.
+        interpolants (list,str) : List of interpolants.
+        interpolantsData (tuple,array_like) : Tuple of arrays of interpolant values. 
 
-         Functions:
-                   listAvailableLines(): Lists all emission lines in HDF5 file.
-                   loadEmissionLine(): Load specified emission line from HDF5 file.
-                   loadEmissionLines(): Load all emission lines found in HDF5 file.                   
-                   getInterpolant(): Extract values for specified interpolant.
-                   loadInterpolantsData(): Load all interpolants data stored in HDF5 file.
-                   getWavelength(): Get rest wavelength of specified emission line.
-                   reportLimits(): Report limits of interpolants.
-                   prepareGalaxyData(): Zip galaxy data ready for interpolation.
-                   interpolate(): Interpolate the table of Cloudy outputs for specified 
-                                  emission line.
     """
     def __init__(self,verbose=False):
         classname = self.__class__.__name__
@@ -80,29 +80,20 @@ class CloudyTable(HDF5):
 
     def listAvailableLines(self):
         """
-        CloudyTable.listAvailableLines(): Lists all emission lines that are available in the
-                                          CLOUDY HDF5 output file.
+        List emission lines available in Cloudy HDF5 library file.
 
-        USAGE:  lines = CloudyTable.listAvailableLines()
-
-         
-           OUTPUTS
-                lines -- List of available emission lines.
+        Returns:
+            list,str : List of emission line names.
         """
         return self.lsDatasets("/lines")
     
     def loadEmissionLine(self,line):
         """
-        CloudyTable.loadEmissionLine(): Reads the emission line data from the Cloudy HDF5 file
-                                        and stores in the CloudyTable.lines dictionary. The 
-                                        information is stored as an instance of the 
-                                        'CloudyEmissionLine' class.
+        Load data for specified emission line from Cloudy library file into an instance of :class:`~galacticus.Cloudy.CloudyEmissionLine`.
+        Store :class:`~galacticus.Cloudy.CloudyEmissionLine` instance in :attr:`~lines` attribute.
 
-        USAGE: CloudyTable.loadEmissionLine(line)
-
-            INPUT
-                line -- Name of emission line to read. If line cannot be found no new
-                        information will be added to CloudyTable.lines.
+        Arguments:
+            line (str) : Name of specified emission line.
                                         
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
@@ -117,12 +108,8 @@ class CloudyTable(HDF5):
     
     def loadEmissionLines(self):
         """
-        CloudyTable.loadEmissionLines(): Read all emission lines from Cloudy HDF5 file. All data
-                                         is stored in CloudyTable.lines dictionary as instances
-                                         of the 'CloudyEmissionLine' class.
-
-        USAGE: CloudyTable.loadEmissionLines()
-
+        Load all emission lines data from Cloudy HDF5 file. Function :meth:`~loadEmissionLine` is 
+        used to store emission line data in :attr:`~lines` attribute.
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         [self.loadEmissionLine(l) for l in self.lsDatasets("/lines") if l not in self.lines.keys()]
@@ -130,17 +117,13 @@ class CloudyTable(HDF5):
 
     def getInterpolant(self,interpolant):
         """
-        CloudyTable.getInterpolant(): Return data for specified interpolant.
+        Load log10 of data for specified interpolant from Cloudy HDF5 file.
 
-        USAGE: data = CloudyTable().getInterpolant(interpolant)
-
-            INPUT
-                 interpolant -- Name of interpolant. List of available interpolants
-                                can be found by viewing the 'interpolants' class 
-                                attribute.
-        
-            OUTPUT
-                 data        -- Numpy array of interpolant data.
+        Arguments:
+            interpolant (str) : Name of interpolant.
+            
+        Returns:
+            array_like,{N,} : Numpy array of interpolant data.
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
@@ -152,34 +135,21 @@ class CloudyTable(HDF5):
 
     def loadInterpolantsData(self):
         """
-        CloudyTable.loadInterpolantsData(): Load bin values for each of the interpolants into
-                                            CloudyTable.interpolantsData where data is stored
-                                            as tuple of Numpy arrays for input into 
-                                            CloudyTable.interpolate. To extract data as 
-                                            individual Numpy arrays use 
-                                            CloudyTable.getInterpolant.
-        
-        USAGE: CloudyTable.loadInterpolantsData()
-        
+        Load all interpolants data from Cloudy HDF5 file. Function :meth:`~getInterpolant` is
+        used to store a tuple of Numpy arrays, sotring the data for each interpolant.        
         """
         self.interpolantsData = tuple([self.getInterpolant(name) for name in self.interpolants])            
         return
 
     def getWavelength(self,lineName):
         """
-        CloudyTable.getWavelength(): Return rest wavelength for specified emission line. Note that 
-                                     the rest wavelength stored by CLOUDY may differ slihgtly from 
-                                     the true rest wavelength -- this may be due to rounding 
-                                     errors or a bug in CLOUDY.
+        Return the wavelength, in Angstroms, for the specified emission line.
 
-        USAGE: data = CloudyTable().getWavelength(line)
-
-            INPUT
-                 line -- Name of emission line. List of available lines
-                         can be found by viewing the 'lines' class attribute.
-        
-            OUTPUT
-                 data -- Float value for rest wavelength.
+        Arguments:
+             lineName (str) : Name of emission line.
+             
+        Return:
+             float : Wavelength in Angstroms.
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         if lineName not in self.lsDatasets("/lines"):
@@ -191,15 +161,10 @@ class CloudyTable(HDF5):
 
     def reportLimits(self,data=None):
         """
-        CloudyTable.reportLimits(): Print report of ranges for interpolants in CLOUDY table.
+        Report limits of Cloudy interpolants and optional range of galaxy data.
 
-        USAGE: CloudyTable().reportLimits([data=None])
-
-             INPUT
-                  data -- Numpy array containing galaxy data, with shape (n,m)
-                          where n is number of interpolants and m is number
-                          of galaxies. Array can be constructed using 
-                          CloudyTable().prepareGalaxyData().
+        Arguments:
+            data (list,optional) : List of galaxy data constucted using :meth:`~prepareGalaxyData`.
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
@@ -223,23 +188,18 @@ class CloudyTable(HDF5):
     def prepareGalaxyData(self,metallicity,densityHydrogen,ionizingFluxHydrogen,\
                         ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen):
         """
-        CloudyTable.prepareGalaxyData(): Function to zip galaxy data ready for input into 
-                                         scipy.interpolate.interpn (used to interpolate over 
-                                         CLOUDY table).
+        Return zipped list of galaxy data.
 
-        USAGE:  data = CloudyTable().prepareGalaxyData(metallicity,densityHydrogen,ionizingFluxHydrogen,\
-                        ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
-                                                     
-             INPUT
-                   metallicity                  -- Numpy array of galaxy metallicites.
-                   densityHydrogen              -- Numpy array of galaxy hydrogen gas density.
-                   ionizingFluxHydrogen         -- Numpy array of galaxy hydrogen ionizing flux.
-                   ionizingFluxHeliumToHydrogen -- Numpy array of galaxy helium ionizing flux.
-                   ionizingFluxOxygenToHydrogen -- Numpy array of galaxy oxygen ionizing flux.
+        Arguments:
+            metallicity (array_like,{N,}) : Numpy array of galaxy metallicity.
+            densityHydrogen (array_like,{N,}) : Numpy array of galaxy hydrogen gas density.
+            ionizingFluxHydrogen (array_like,{N,}) : Numpy array of galaxy Lyman ionizing luminosity.            
+            ionizingFluxHeliumToHydrogen (array_like,{N,}) : Numpy array of ratio for galaxy He/Lyman ionizing luminosities.
+            ionizingFluxOxygenToHydrogen (array_like,{N,}) : Numpy array of ratio for galaxy O/Lyman ionizing luminosities.
+            
+        Return:
+            list : List of Numpy arrays for galaxy properties.
 
-             OUTPUT
-                   data                         -- Numpy array of zipped galaxy data.
-                             
         """
         Z = zip(metallicity,densityHydrogen,ionizingFluxHydrogen,
                 ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
@@ -250,22 +210,28 @@ class CloudyTable(HDF5):
     def interpolate(self,lineName,metallicity,densityHydrogen,ionizingFluxHydrogen,\
                         ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen):
         """
-        CloudyTable.interpolate(): Interpolate a table of CLOUDY output for specified emission line.
+        Interpolate over library of Cloudy HDF5 file to obtain luminosity for specified emission line.
 
-        USAGE:  luminosity = CloudyTable().interpolate(line,metallicity,densityHydrogen,ionizingFluxHydrogen,\
-                                                       ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
-                                                       
-               INPUT
-                    line                         -- Name of emission line. Available lines provided in 'lines'
-                                                    class attribute.
-                    metallicity                  -- Numpy array of galaxy metallicites.
-                    densityHydrogen              -- Numpy array of galaxy hydrogen gas density.
-                    ionizingFluxHydrogen         -- Numpy array of galaxy hydrogen ionizing flux.
-                    ionizingFluxHeliumToHydrogen -- Numpy array of galaxy helium ionizing flux.
-                    ionizingFluxOxygenToHydrogen -- Numpy array of galaxy oxygen ionizing flux.
+        Arguments:
+            lineName (str) : Emission line name.
+            metallicity (array_like,{N,}) : Numpy array of galaxy metallicity.
+            densityHydrogen (array_like,{N,}) : Numpy array of galaxy hydrogen gas density.
+            ionizingFluxHydrogen (array_like,{N,}) : Numpy array of galaxy Lyman ionizing luminosity.            
+            ionizingFluxHeliumToHydrogen (array_like,{N,}) : Numpy array of ratio for galaxy He/Lyman ionizing luminosities.
+            ionizingFluxOxygenToHydrogen (array_like,{N,}) : Numpy array of ratio for galaxy O/Lyman ionizing luminosities.
 
-              OUTPUT
-                    luminosity                   -- Numpy array of emission line luminosities.
+        Return:
+            array_like,{N,} : NUmpy array of galaxy luminosity for specified emission line.
+
+        Note:
+            The keyword arguments **bounds_error**, **fill_value** and **method** for
+            `scipy.interpolate.interpn <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interpn.html>`_
+            can be set using **rcParams**. For example
+        
+            >>> from galacticus import rcParams
+            >>> rcParams.set("cloudy","bounds_error",False)
+            >>> rcParams.set("cloudy","fill_value",None)
+            >>> rcParams.set("cloudy","method",'linear')
 
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
