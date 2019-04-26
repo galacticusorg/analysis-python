@@ -3,6 +3,7 @@
 import sys,os,fnmatch,re
 import numpy as np
 import unittest
+from . import rcParams
 from .datasets import Dataset
 from .properties.manager import Property
 from .constants import metallicitySolar,mega,massSolar,parsec
@@ -112,8 +113,11 @@ class Metallicity(Property):
         # Compute metallicity
         DATA = Dataset(name=propertyName)
         DATA.data = np.copy(metallicity)
-        DATA.data /= metallicitySolar
+        DATA.data /= metallicitySolar        
         del metallicity
+        # Apply zero offset correction
+        zeroCorrection = rcParams.getfloat("metals","zeroCorrection",fallback=1.0e-50)
+        DATA.data += zeroCorrection
         return DATA
 
 
@@ -184,6 +188,9 @@ class MetalsGasDensity(Property):
         attr = {"unitsInSI":massSolar/(mega*parsec)**2}
         DATA.attr = attr
         DATA.data = np.copy(self.getSurfaceDensityMetals(component,redshift))
+        # Apply zero offset correction
+        zeroCorrection = rcParams.getfloat("metals","zeroCorrection",fallback=1.0e-50)
+        DATA.data += zeroCorrection
         return DATA
 
 
