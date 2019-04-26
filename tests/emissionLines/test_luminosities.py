@@ -107,10 +107,6 @@ class TestLuminosities(unittest.TestCase):
         result = self.LINES.getIonizingFluxHydrogen(luminosity)
         diff = np.fabs(result-ionizingFluxHydrogen)
         [self.assertLessEqual(d,1.0e06) for d in diff]
-        np.place(luminosity,np.random.rand(50)<0.1,0.0)
-        result = self.LINES.getIonizingFluxHydrogen(luminosity)
-        for i in range(len(result)):
-            self.assertEqual(luminosity[i]==0.0,np.isnan(result[i]))
         return
 
     def test_LuminositiesGetIonizingFluxRatio(self):
@@ -256,11 +252,12 @@ class TestLuminosities(unittest.TestCase):
                 hydrogen = component+"HydrogenGasDensity"
                 GALS = self.LINES.galaxies.get(redshift,properties=[metals,hydrogen])
                 hydrogenGasDensity = np.log10(np.copy(GALS[hydrogen].data))
-                metallicity = np.copy(GALS[metals].data)
+                metallicity = np.log10(np.copy(GALS[metals].data)+1.0e-50)
                 del GALS
                 ionizingFluxHydrogen = self.LINES.getIonizingFluxHydrogen(FLUXES[LymanName].data)
                 numberHIIRegion = self.LINES.getNumberHIIRegions(redshift,component)
-                np.place(numberHIIRegion,numberHIIRegion==0.0,np.nan)
+                mask = numberHIIRegion == 0.0
+                numberHIIRegion[mask] = 1.0
                 ionizingFluxHydrogen -= np.log10(numberHIIRegion)
                 ionizingFluxHeliumToHydrogen = self.LINES.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[HeliumName].data)
                 ionizingFluxOxygenToHydrogen = self.LINES.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[OxygenName].data)
@@ -269,11 +266,8 @@ class TestLuminosities(unittest.TestCase):
                                                                    ionizingFluxOxygenToHydrogen))
                 luminosityMultiplier = self.LINES.getLuminosityMultiplier(name,redshift)
                 luminosity *= (luminosityMultiplier*numberHIIRegion*erg/luminositySolar)
-                nanReplaceValue = rcParams.get("emissionLine","nanReplaceValue",fallback=None)
-                if nanReplaceValue is not None:
-                    nanMask = np.isnan(luminosity)
-                    np.place(luminosity,nanMask,float(nanReplaceValue))
-                    del nanMask
+                zeroCorrection = rcParams.getfloat("emissionLine","zeroCorrection",fallback=1.0e-50)
+                luminosity += zeroCorrection
             DATA = self.LINES.get(name,redshift)
             if luminosity is None:
                 self.assertIsNone(DATA.data)
@@ -288,11 +282,9 @@ class TestLuminosities(unittest.TestCase):
     def test_ergPerSecond(self):
         luminosity0 = np.random.rand(50)*4.0 + 3.0
         luminosity0 = 10.0**luminosity0
-        # Check conversion
-        luminosity = np.log10(np.copy(luminosity0))
-        luminosity += np.log10(luminositySolar)
-        luminosity -= np.log10(erg)
-        luminosity = 10.0**luminosity
+        # Check conversion        
+        luminosity = np.copy(luminosity0)
+        luminosity *= luminositySolar/erg
         self.assertTrue(np.array_equal(luminosity,ergPerSecond(luminosity0)))
         return
 

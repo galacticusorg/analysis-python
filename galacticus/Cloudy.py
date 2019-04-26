@@ -102,7 +102,7 @@ class CloudyTable(HDF5):
             return 
         LINE = CloudyEmissionLine(name=line)
         LINE.wavelength = self.readAttributes("lines/"+line,required=["wavelength"])["wavelength"]
-        LINE.luminosities = self.readDataset('/lines/'+line)
+        LINE.luminosities = np.log10(self.readDataset('/lines/'+line))
         self.lines[line] = LINE
         return
     
@@ -221,7 +221,7 @@ class CloudyTable(HDF5):
             ionizingFluxOxygenToHydrogen (array_like,{N,}) : Numpy array of ratio for galaxy O/Lyman ionizing luminosities.
 
         Return:
-            array_like,{N,} : NUmpy array of galaxy luminosity for specified emission line.
+            array_like,{N,} : Numpy array of galaxy luminosity for specified emission line.
 
         Note:
             The keyword arguments **bounds_error**, **fill_value** and **method** for
@@ -258,5 +258,6 @@ class CloudyTable(HDF5):
         luminosities = interpn(self.interpolantsData,tableLuminosities,galaxyData,\
                                    method=method,bounds_error=bounds_error,\
                                    fill_value=fill_value)
+        luminosities = 10.0**luminosities
         return luminosities
     

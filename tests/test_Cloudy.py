@@ -38,7 +38,7 @@ class TestCloudyTable(unittest.TestCase):
         self.assertEqual(LINE.name,name)
         wavelength = self.CLOUDY.readAttributes("lines/"+name,required=["wavelength"])["wavelength"]
         self.assertEqual(wavelength,LINE.wavelength)
-        luminosities = self.CLOUDY.readDataset('/lines/'+name)
+        luminosities = np.log10(self.CLOUDY.readDataset('/lines/'+name))
         self.assertEqual(luminosities.shape,LINE.luminosities.shape)
         diff = np.fabs(luminosities-LINE.luminosities).flatten()
         [self.assertLessEqual(d,1.0e-6) for d in diff]

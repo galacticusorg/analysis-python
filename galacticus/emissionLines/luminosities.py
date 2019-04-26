@@ -161,7 +161,7 @@ class EmissionLineLuminosity(Property):
 
     @classmethod
     def getIonizingFluxHydrogen(cls,LyLuminosity):        
-        """
+        """ionizingFluxHydrogen
         EmissionLineLuminosity.getIonizingFluxHydrogen(): Compute the Lyman ionizing flux from the supplied
                                                           Lyman continuuum luminosity.
 
@@ -176,7 +176,10 @@ class EmissionLineLuminosity(Property):
         """
         funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name        
         ionizingFluxHydrogen = np.copy(LyLuminosity)
-        np.place(ionizingFluxHydrogen,ionizingFluxHydrogen==0.0,np.nan)
+        mask = ionizingFluxHydrogen==0.0
+        if any(mask):
+            ionizingFluxHydrogen[mask] = 1.0e-50
+        del mask
         return np.log10(ionizingFluxHydrogen)+50.0
     
     @classmethod
@@ -372,13 +375,14 @@ class EmissionLineLuminosity(Property):
         # i) Hydrogen gas density
         hydrogenGasDensity = np.log10(np.copy(GALS[hydrogen].data))
         # ii) Metallicity
-        metallicity = np.copy(GALS[metals].data)
+        metallicity = np.log10(np.copy(GALS[metals].data)+1.0e-50)
         del GALS
         # iii) Ionizing Hydrogen flux
         ionizingFluxHydrogen = self.getIonizingFluxHydrogen(FLUXES[LymanName].data)
         # Convert the hydrogen ionizing luminosity to be per HII region
         numberHIIRegion = self.getNumberHIIRegions(redshift,MATCH.group('component'))
-        np.place(numberHIIRegion,numberHIIRegion==0.0,np.nan)
+        mask = numberHIIRegion == 0.0
+        numberHIIRegion[mask] = 1.0
         ionizingFluxHydrogen -= np.log10(numberHIIRegion)
         # iv) Luminosity ratios He/H and Ox/H 
         ionizingFluxHeliumToHydrogen = self.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[HeliumName].data)
@@ -400,12 +404,9 @@ class EmissionLineLuminosity(Property):
         luminosityMultiplier = self.getLuminosityMultiplier(propertyName,redshift)
         # Convert units of luminosity 
         DATA.data *= (luminosityMultiplier*numberHIIRegion*erg/luminositySolar)
-        # Mask out any NaNs if required
-        nanReplaceValue = rcParams.get("emissionLine","nanReplaceValue",fallback=None)
-        if nanReplaceValue is not None:
-            nanMask = np.isnan(DATA.data)
-            np.place(DATA.data,nanMask,float(nanReplaceValue))
-            del nanMask
+        # Offset zero luminosities
+        zeroCorrection = rcParams.getfloat("emissionLine","zeroCorrection",fallback=1.0e-50)
+        DATA.data += zeroCorrection
         return DATA
 
 

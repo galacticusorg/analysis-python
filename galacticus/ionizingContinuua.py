@@ -3,6 +3,7 @@
 import sys,os,fnmatch,re
 import numpy as np
 import unittest
+from . import rcParams
 from .datasets import Dataset
 from .properties.manager import Property
 from .filters.filters import GalacticusFilter
@@ -64,6 +65,9 @@ class IonizingContinuum(Property):
         # Compute continuum luminosity
         DATA = Dataset(name=propertyName)
         DATA.data = np.copy(GALS[luminosityName].data)*self.getConversionFactor(FILTER)
+        # Apply zero correction (to avoid zero luminosities)
+        zeroCorrection = rcParams.getfloat("ionizingContinuua","zeroCorrection",fallback=1.0e-50)
+        DATA.data += zeroCorrection
         del GALS
         return DATA
         
