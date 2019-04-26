@@ -102,9 +102,14 @@ class Metallicity(Property):
         massName = MATCH.group('component')+"Mass"+MATCH.group('phase')
         metalsName = MATCH.group('component')+"Abundances"+MATCH.group('phase')+"Metals"
         GALS = self.galaxies.get(redshift,properties=[massName,metalsName])
-        # Convert any values with zero gas mass to avoid divide by zero
-        mass = np.copy(GALS[massName].data)
+        # Extract abdunances and remove any negative values
         abundance = np.copy(GALS[metalsName].data)
+        mask = abundance < 0.0
+        if any(mask):
+            adundance[mask] = 0.0
+        # Extract gas mass
+        mass = np.copy(GALS[massName].data)
+        # Convert any values with zero gas mass to avoid divide by zero
         metallicity = np.zeros_like(mass)
         mask = mass>0.0
         metallicity[mask] = np.copy(abundance[mask]/mass[mask])

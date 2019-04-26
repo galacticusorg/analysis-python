@@ -375,7 +375,7 @@ class EmissionLineLuminosity(Property):
         # i) Hydrogen gas density
         hydrogenGasDensity = np.log10(np.copy(GALS[hydrogen].data))
         # ii) Metallicity
-        metallicity = np.log10(np.copy(GALS[metals].data)+1.0e-50)
+        metallicity = np.log10(np.copy(GALS[metals].data))
         del GALS
         # iii) Ionizing Hydrogen flux
         ionizingFluxHydrogen = self.getIonizingFluxHydrogen(FLUXES[LymanName].data)
