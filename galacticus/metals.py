@@ -106,7 +106,7 @@ class Metallicity(Property):
         abundance = np.copy(GALS[metalsName].data)
         mask = abundance < 0.0
         if any(mask):
-            adundance[mask] = 0.0
+            abundance[mask] = 0.0
         # Extract gas mass
         mass = np.copy(GALS[massName].data)
         # Convert any values with zero gas mass to avoid divide by zero
