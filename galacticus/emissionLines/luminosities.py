@@ -383,7 +383,8 @@ class EmissionLineLuminosity(Property):
         numberHIIRegion = self.getNumberHIIRegions(redshift,MATCH.group('component'))
         mask = numberHIIRegion == 0.0
         numberHIIRegion[mask] = 1.0
-        ionizingFluxHydrogen -= np.log10(numberHIIRegion)
+        ionizingFluxHydrogen -= np.copy(np.log10(numberHIIRegion))
+        numberHIIRegion[mask] = 0.0
         # iv) Luminosity ratios He/H and Ox/H 
         ionizingFluxHeliumToHydrogen = self.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[HeliumName].data)
         ionizingFluxOxygenToHydrogen = self.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[OxygenName].data)
