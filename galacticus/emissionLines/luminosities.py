@@ -18,10 +18,7 @@ from ..constants import massAtomic,atomicMassHydrogen,massFractionHydrogen
 
 
 def ergPerSecond(luminosity):
-    luminosity = np.log10(luminosity)
-    luminosity += np.log10(luminositySolar)
-    luminosity -= np.log10(erg)
-    luminosity = 10.0**luminosity
+    luminosity *= luminositySolar/erg
     return luminosity
 
 

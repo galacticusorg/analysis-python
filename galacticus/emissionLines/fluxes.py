@@ -10,11 +10,8 @@ from ..constants import luminosityAB,erg,luminositySolar
 from ..constants import centi,Pi,mega,parsec
 
 def ergPerSecondPerCentimeterSquared(flux):
-    flux = np.log10(flux)
-    flux += np.log10(luminositySolar)
-    flux -= np.log10(erg)
-    flux -= np.log10((mega*parsec/centi)**2)
-    flux = 10.0**flux
+    flux *= luminositySolar/erg
+    flux /= (mega*parsec/centi)**2
     return flux
 
 
