@@ -1,4 +1,11 @@
 #! /usr/bin/env python
+"""
+galacticus.hydrogenGasDensity
+=============================
+
+Compute the hydrogen gas surface density for Galacticus galaxies.
+
+"""
 
 import sys,os,fnmatch,re
 import numpy as np
@@ -15,6 +22,15 @@ from .constants import massAtomic,atomicMassHydrogen,massFractionHydrogen
 class HydrogenGasDensity(Property):
     """
     Compute the hydrogen gas density for a galaxy.
+    
+    Arguments:
+        galaxies (object) : Instance of :class:`~galacticus.galaxies.Galaxies` class.
+        verbose (bool,optional) : Print additional information
+
+    Attributes:
+        galaxies (object) : Instance of :class:`~galacticus.galaxies.Galaxies` class.
+        verbose (bool) : Print additional information
+
     """
     
     def __init__(self,galaxies,verbose=False):
@@ -26,6 +42,16 @@ class HydrogenGasDensity(Property):
 
     @classmethod
     def parseDatasetName(cls,datasetName):
+        """
+        Parse a hydrogen gas density dataset name.
+        
+        Arguments:
+            datasetName (str) : Name of dataset to parse.
+
+        Returns:
+            match object : A `match <https://docs.python.org/3/library/re.html#re.Pattern.match>`_ instance.
+
+        """
         funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
         # Construct search string to pass to regex
         searchString = "^(?P<component>disk|spheroid)HydrogenGasDensity$"
@@ -33,6 +59,21 @@ class HydrogenGasDensity(Property):
 
     @classmethod
     def matches(cls,propertyName,redshift=None,raiseError=False):
+        """
+        Determines whether the specified property name matches the pattern requirements for a hydrogen gas density dataset name.
+
+        Arguments:
+            propertyName (str) : Dataset name to query.
+            redshift (float,optional) : The redshift of the Galacticus snapshot output.
+            raiseError (bool,optional) : Raise an error if dataset name does not match the pattern.
+
+        Return:
+            bool : Boolean indicating whether the dataset name matches the pattern.
+
+        Raises:
+            RuntimError : Raised if dataset name does not match pattern.
+
+        """
         funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
         MATCH = cls.parseDatasetName(propertyName)
         if MATCH is not None:
