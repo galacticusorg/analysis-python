@@ -388,6 +388,42 @@ class EmissionLineLuminosity(Property):
         # iv) Luminosity ratios He/H and Ox/H 
         ionizingFluxHeliumToHydrogen = self.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[HeliumName].data)
         ionizingFluxOxygenToHydrogen = self.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[OxygenName].data)
+        # Truncate properties to table bounds where necessary to avoid unphysical extrapolations.
+        #
+        ## Hydrogen density and H-ionizing flux are truncated at both the lower and upper extent
+        ## of the tabulated range. The assumption is that the table covers the plausible
+        ## physical range for these values. In the case of H-ionizing flux, if we truncate the
+        ## value we must then apply a multiplicative correction to the line luminosity to ensure
+        ## that we correctly account for all ionizing photons produced.
+        ##
+        ## For metallicity and the He/H and O/H ionizing flux ratios we truncate only at the
+        ## upper extent of the tabulated range. The table is assumed to be tabulated up to the
+        ## maximum physically plausible extent for these quantities. Extrapolation to lower
+        ## values should be reasonably robust (and the table is assumed to extend to
+        ## sufficiently low values that the consequences of extrapolation are unlikely to be
+        ## observationally relevant anyway).
+        hydrogenGasDensityTable           = self.CLOUDY.getInterpolant('densityHydrogen'             )
+        metallicityTable                  = self.CLOUDY.getInterpolant('metallicity'                 )
+        ionizingFluxHydrogenTable         = self.CLOUDY.getInterpolant('ionizingFluxHydrogen'        )
+        ionizingFluxHeliumToHydrogenTable = self.CLOUDY.getInterpolant('ionizingFluxHeliumToHydrogen')
+        ionizingFluxOxygenToHydrogenTable = self.CLOUDY.getInterpolant('ionizingFluxOxygenToHydrogen')
+        boundLowHydrogenGasDensity            = hydrogenGasDensity           < hydrogenGasDensityTable          [ 0]
+        boundHighHydrogenGasDensity           = hydrogenGasDensity           > hydrogenGasDensityTable          [-1]
+        boundHighMetallicity                  = metallicity                  > metallicityTable                 [-1]
+        boundLowIonizingFluxHydrogen          = ionizingFluxHydrogen         < ionizingFluxHydrogenTable        [ 0]
+        boundHighIonizingFluxHydrogen         = ionizingFluxHydrogen         > ionizingFluxHydrogenTable        [-1]
+        boundHighIonizingFluxHeliumToHydrogen = ionizingFluxHeliumToHydrogen > ionizingFluxHeliumToHydrogenTable[-1]
+        boundHighIonizingFluxOxygenToHydrogen = ionizingFluxOxygenToHydrogen > ionizingFluxOxygenToHydrogenTable[-1]
+        ionizingFluxMultiplier                = np.zeros(ionizingFluxHydrogen.shape)
+        hydrogenGasDensity          [boundLowHydrogenGasDensity           ] =  hydrogenGasDensityTable          [ 0]
+        hydrogenGasDensity          [boundHighHydrogenGasDensity          ] =  hydrogenGasDensityTable          [-1]
+        metallicity                 [boundHighMetallicity                 ] =  metallicityTable                 [-1]
+        ionizingFluxMultiplier      [boundLowIonizingFluxHydrogen         ] = -ionizingFluxHydrogenTable        [ 0]+ionizingFluxHydrogen[boundLowIonizingFluxHydrogen ]
+        ionizingFluxMultiplier      [boundHighIonizingFluxHydrogen        ] = -ionizingFluxHydrogenTable        [-1]+ionizingFluxHydrogen[boundHighIonizingFluxHydrogen]
+        ionizingFluxHydrogen        [boundLowIonizingFluxHydrogen         ] =  ionizingFluxHydrogenTable        [ 0]
+        ionizingFluxHydrogen        [boundHighIonizingFluxHydrogen        ] =  ionizingFluxHydrogenTable        [-1]
+        ionizingFluxHeliumToHydrogen[boundHighIonizingFluxHeliumToHydrogen] =  ionizingFluxHeliumToHydrogenTable[-1]
+        ionizingFluxOxygenToHydrogen[boundHighIonizingFluxOxygenToHydrogen] =  ionizingFluxOxygenToHydrogenTable[-1]
         # Create Dataset() instance        
         DATA = Dataset(name=propertyName)
         attr = {"unitsInSI":luminositySolar}
@@ -404,7 +440,7 @@ class EmissionLineLuminosity(Property):
         # Get luminosity multiplier
         luminosityMultiplier = self.getLuminosityMultiplier(propertyName,redshift)
         # Convert units of luminosity 
-        DATA.data *= (luminosityMultiplier*numberHIIRegion*erg/luminositySolar)
+        DATA.data *= (10.0**ionizingFluxMultiplier*luminosityMultiplier*numberHIIRegion*erg/luminositySolar)
         # Offset zero luminosities
         zeroCorrection = rcParams.getfloat("emissionLine","zeroCorrection",fallback=1.0e-50)
         DATA.data += zeroCorrection
