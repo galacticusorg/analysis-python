@@ -131,9 +131,9 @@ class EmissionLineLuminosity(Property):
         recent = ""
         if MATCH.group("recent"):
             recent = MATCH.group("recent")
-        LymanName = MATCH.group("component")+"LymanContinuumLuminosity:"+MATCH.group("frame")+MATCH.group("redshiftString")+recent
-        HeliumName = MATCH.group("component")+"HeliumContinuumLuminosity:"+MATCH.group("frame")+MATCH.group("redshiftString")+recent
-        OxygenName = MATCH.group("component")+"OxygenContinuumLuminosity:"+MATCH.group("frame")+MATCH.group("redshiftString")+recent
+        LymanName = MATCH.group("component")+"LymanContinuumLuminosity:rest"+MATCH.group("redshiftString")+recent
+        HeliumName = MATCH.group("component")+"HeliumContinuumLuminosity:rest"+MATCH.group("redshiftString")+recent
+        OxygenName = MATCH.group("component")+"OxygenContinuumLuminosity:rest"+MATCH.group("redshiftString")+recent
         return LymanName,HeliumName,OxygenName
 
     def getContinuumLuminosities(self,propertyName,redshift):
