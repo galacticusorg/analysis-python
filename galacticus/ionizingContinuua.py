@@ -57,6 +57,21 @@ class IonizingContinuum(Property):
         if MATCH.group('recent') is not None:
             luminosityName = luminosityName + MATCH.group('recent')
         GALS = self.galaxies.get(redshift,properties=[luminosityName])
+
+        # For z=0 if the property was not found we can try for the corresponding observed frame property (as observed and rest frame are identical at z=0).
+        if GALS[luminosityName] is None and redshift == 0.0:
+            frame = MATCH.group("frame")
+            if frame == "rest":
+                frame="observed"
+            else:
+                frame="rest"
+            luminosityName = MATCH.group('component')+"LuminositiesStellar:"+\
+            self.filterNames[MATCH.group('continuum')]+\
+            ":"+frame+":z"+MATCH.group('redshift')
+            if MATCH.group('recent') is not None:
+                luminosityName = luminosityName + MATCH.group('recent')
+            GALS = self.galaxies.get(redshift,properties=[luminosityName])
+            
         # Return None instance if stellar luminosity is missing
         if GALS[luminosityName] is None:
             return None
