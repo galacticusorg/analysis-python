@@ -139,7 +139,7 @@ class EmissionLineLuminosity(Property):
     def getContinuumLuminosities(self,propertyName,redshift):
         """
         EmissionLineLuminosity.getContinuumLuminosities: For specified emission line luminosity dataset,
-                                                         return dictionary of appopriate continuum
+                                                         return dictionary of appropriate continuum
                                                          luminosity datasets.
         
         USAGE: LUMINOSITIES = EmissionLineLuminosity.getContinuumLuminosities(propertyName,redshift)
@@ -412,7 +412,9 @@ class EmissionLineLuminosity(Property):
         boundHighMetallicity                  = metallicity                  > metallicityTable                 [-1]
         boundLowIonizingFluxHydrogen          = ionizingFluxHydrogen         < ionizingFluxHydrogenTable        [ 0]
         boundHighIonizingFluxHydrogen         = ionizingFluxHydrogen         > ionizingFluxHydrogenTable        [-1]
+        boundLowIonizingFluxHeliumToHydrogen  = ionizingFluxHeliumToHydrogen < ionizingFluxHeliumToHydrogenTable[ 0]
         boundHighIonizingFluxHeliumToHydrogen = ionizingFluxHeliumToHydrogen > ionizingFluxHeliumToHydrogenTable[-1]
+        boundLowIonizingFluxOxygenToHydrogen  = ionizingFluxOxygenToHydrogen < ionizingFluxOxygenToHydrogenTable[ 0]
         boundHighIonizingFluxOxygenToHydrogen = ionizingFluxOxygenToHydrogen > ionizingFluxOxygenToHydrogenTable[-1]
         ionizingFluxMultiplier                = np.zeros(ionizingFluxHydrogen.shape)
         hydrogenGasDensity          [boundLowHydrogenGasDensity           ] =  hydrogenGasDensityTable          [ 0]
@@ -422,7 +424,9 @@ class EmissionLineLuminosity(Property):
         ionizingFluxMultiplier      [boundHighIonizingFluxHydrogen        ] = -ionizingFluxHydrogenTable        [-1]+ionizingFluxHydrogen[boundHighIonizingFluxHydrogen]
         ionizingFluxHydrogen        [boundLowIonizingFluxHydrogen         ] =  ionizingFluxHydrogenTable        [ 0]
         ionizingFluxHydrogen        [boundHighIonizingFluxHydrogen        ] =  ionizingFluxHydrogenTable        [-1]
+        ionizingFluxHeliumToHydrogen[boundLowIonizingFluxHeliumToHydrogen ] =  ionizingFluxHeliumToHydrogenTable[ 0]
         ionizingFluxHeliumToHydrogen[boundHighIonizingFluxHeliumToHydrogen] =  ionizingFluxHeliumToHydrogenTable[-1]
+        ionizingFluxOxygenToHydrogen[boundLowIonizingFluxOxygenToHydrogen ] =  ionizingFluxOxygenToHydrogenTable[ 0]
         ionizingFluxOxygenToHydrogen[boundHighIonizingFluxOxygenToHydrogen] =  ionizingFluxOxygenToHydrogenTable[-1]
         # Create Dataset() instance        
         DATA = Dataset(name=propertyName)
@@ -430,7 +434,7 @@ class EmissionLineLuminosity(Property):
         attr["massHIIRegion"] = self.getMassHIIRegions()
         attr["lifetimeHIIRegion"] = self.getLifetimeHIIRegions()
         DATA.attr = attr        
-        # Pass properties to CloudyTable() class for interpolation        
+        # Pass properties to CloudyTable() class for interpolation
         DATA.data = np.copy(self.CLOUDY.interpolate(MATCH.group("lineName"),metallicity,hydrogenGasDensity,\
                                                         ionizingFluxHydrogen,ionizingFluxHeliumToHydrogen,\
                                                         ionizingFluxOxygenToHydrogen))        
