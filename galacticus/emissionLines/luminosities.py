@@ -222,6 +222,22 @@ class EmissionLineLuminosity(Property):
         return rcParams.getfloat("emissionLine","massHIIRegion",fallback=7.5e3)
     
     @classmethod
+    def getEfficiencyHIIRegions(cls):
+        """
+        EmissionLineLuminosity.getEfficiencyHIIRegion(): Return the star formation efficiency of HII regions (fraction
+                                                         of total mass converted into stars), as stored in the
+                                                         configuration parameters. Default value is 0.01.
+                                                   
+        USAGE: efficiency = EmissionLineLuminosity.getEfficiencyHIIRegion()
+
+           OUTPUTS
+               efficiency -- Star formation efficiency of HII regions.
+
+        """
+        funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
+        return rcParams.getfloat("emissionLine","efficiencyHIIRegion",fallback=0.01)
+    
+    @classmethod
     def getLifetimeHIIRegions(cls):
         """
         EmissionLineLuminosity.getLifetimeHIIRegion(): Return the lifetime of HII regions, as stored in 
@@ -258,9 +274,10 @@ class EmissionLineLuminosity(Property):
                                  "Should be either 'disk' or 'spheroid'.")
         sfrName = component+"StarFormationRate"
         GALS = self.galaxies.get(redshift,properties=[sfrName])
+        efficiencyHIIRegion = self.getEfficiencyHIIRegions()
         massHIIRegion = self.getMassHIIRegions()
         lifetimeHIIRegion = self.getLifetimeHIIRegions()
-        return GALS[sfrName].data*lifetimeHIIRegion/massHIIRegion
+        return GALS[sfrName].data*lifetimeHIIRegion/massHIIRegion/efficiencyHIIRegion
         
     def getLuminosityMultiplier(self,propertyName,redshift):
         """
