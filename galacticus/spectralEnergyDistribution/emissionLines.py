@@ -47,7 +47,10 @@ class EmissionLines(object):
         if MATCH.group("recent") is not None:
             datasetName = datasetName + MATCH.group("recent")
         FWHM = self.galaxies.get(redshift,properties=[datasetName])[datasetName].data
-        # Apply line profile
+        if fnmatch.fnmatch(MATCH.group("frame"),"observed"):
+            z = self.galaxies.get(redshift,properties=["redshift"])["redshift"].data
+            FWHM *= (1.0+z)
+       # Apply line profile
         if fnmatch.fnmatch(self.profile.lower(),"gaussian"):
             luminosities += LineProfiles.gaussian(wavelengths,lineWavelength,lineLuminosity,FWHM)
         return
