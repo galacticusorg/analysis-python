@@ -7,7 +7,7 @@ from .. import rcParams
 from ..io import GalacticusHDF5
 from .lineProfiles import LineProfiles
 from ..Cloudy import CloudyTable
-from ..constants import speedOfLight,angstrom
+from ..constants import speedOfLight,angstrom,luminositySolar,luminosityAB
 from . import getSpectralEnergyDistributionWavelengths,parseDatasetName
 
 class EmissionLines(object):
@@ -65,9 +65,11 @@ class EmissionLines(object):
         # Add in the luminosities for the individual lines
         [self.addLineProfile(LINE,MATCH,redshift,wavelengths,luminosities) 
          for LINE in self.CLOUDY.lines.values()]
-        # Convert units
-        frequency = speedOfLight/np.stack([wavelengths]*luminosities.shape[0])*angstrom
-        luminosities /= frequency
+        # Convert units. Line profiles are currently in Lsun/Angstrom. We want to convert to per frequency, while requires
+        # multiplying by wavelength**2/speedOfLight. We then want this in units of the the AB magnitude system zero point
+        # luminosity (which is the unit of the stellar continuum of the SED to which this will be added).
+        conversion = luminositySolar*angstrom*np.stack([wavelengths**2]*luminosities.shape[0])/speedOfLight/luminosityAB
+        luminosities *= conversion
         return luminosities
         
     def get(self,propertyName,redshift):
