@@ -2,6 +2,7 @@
 
 import os,sys,fnmatch
 import numpy as np
+import re
 import warnings
 import unittest
 import xml.etree.ElementTree as ET
@@ -142,15 +143,18 @@ class xmlTree(object):
         return
 
     def updateElement(self,path,attrib={},text=None,createParents=False):
-        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name        
-        matches = self.matchPath(path)        
+        funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
+        # Multiply-appearing parameters (e.g. "mergerTreeOutputter[1]") are not supported. We simply ignore the array designation
+        # here which means that parameter values will be overwritten.
+        pathSimple = re.sub(r'\[\d+\]',r'',path)
+        matches = self.matchPath(pathSimple)        
         if len(matches) == 0:
-            parentPath = "/".join(path.split("/")[:-1])
+            parentPath = "/".join(pathSimple.split("/")[:-1])
             if parentPath == "":
                 parentPath = "/"
-            parentName = path.split("/")[-1]
+            parentName = pathSimple.split("/")[-1]
             self.createElement(parentPath,parentName,createParents=createParents)
-        ELEM = self.getElement(path)
+        ELEM = self.getElement(pathSimple)
         for key in attrib.keys():
             ELEM.attrib[key] = attrib[key]                
         if text is not None:
