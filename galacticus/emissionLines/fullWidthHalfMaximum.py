@@ -125,7 +125,7 @@ class FullWidthHalfMaximum(Property):
     def getVelocityWidth(self,propertyName,redshift):
         """
         FullWidthHalfMaximum.getVelocityWidth(): Estimate the velocity width of an emission line either
-                                                 assuming a ficed wdith or by approximation from the 
+                                                 assuming a fixed width or by approximation from the 
                                                  velocity dispersion of the galaxy.
 
         USAGE: velocity = FullWidthHalfMaximum.getVelocityWidth(propertyName,redshift)
