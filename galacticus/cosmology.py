@@ -9,12 +9,12 @@ from .constants import Pi,massSolar,parsec,mega
 from .parameters.io import ParametersFromHDF5
 
 def loadModelCosmology(PARAMS):
-    omega0 = float(PARAMS.getParameter("/parameters/cosmologyParametersMethod/OmegaMatter"))
-    lambda0 = float(PARAMS.getParameter("/parameters/cosmologyParametersMethod/OmegaDarkEnergy"))
-    omegab = float(PARAMS.getParameter("/parameters/cosmologyParametersMethod/OmegaBaryon"))                    
-    h0 = float(PARAMS.getParameter("/parameters/cosmologyParametersMethod/HubbleConstant"))/100.0
-    sigma8 = float(PARAMS.getParameter("/parameters/cosmologicalMassVarianceMethod/sigma_8"))
-    ns = float(PARAMS.getParameter("/parameters/powerSpectrumPrimordialMethod/index"))
+    omega0 = float(PARAMS.getParameter("/parameters/cosmologyParameters/OmegaMatter"))
+    lambda0 = float(PARAMS.getParameter("/parameters/cosmologyParameters/OmegaDarkEnergy"))
+    omegab = float(PARAMS.getParameter("/parameters/cosmologyParameters/OmegaBaryon"))                    
+    h0 = float(PARAMS.getParameter("/parameters/cosmologyParameters/HubbleConstant"))/100.0
+    sigma8 = float(PARAMS.getParameter("/parameters/cosmologicalMassVariance/sigma_8"))
+    ns = float(PARAMS.getParameter("/parameters/powerSpectrumPrimordial/index"))
     cosmology = Cosmology(omega0=omega0,lambda0=lambda0,omegab=omegab,h0=h0,sigma8=sigma8,
                           ns=ns,h_independent=False)
     return cosmology

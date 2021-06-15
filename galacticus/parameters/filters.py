@@ -90,13 +90,13 @@ class FilterParameterSet(object):
         # Update post-processing method
         self.updateParameterList(PARAMS,"/parameters/luminosityPostprocessSet",postProcess)
         # Update methods
-        self.updateMethod(PARAMS,"/parameters/stellarPopulationSpectraPostprocessDefaultMethods",absorption)
+        self.updateMethod(PARAMS,"/parameters/stellarPopulationSpectraPostprocessDefault",absorption)
         if postProcess == "recent":        
-            self.updateRecentMethod(PARAMS,"/parameters/stellarPopulationSpectraPostprocessRecentMethods",absorption)
+            self.updateRecentMethod(PARAMS,"/parameters/stellarPopulationSpectraPostprocessRecent",absorption)
         if postProcess == "unabsorbed":
-            self.updateMethod(PARAMS,"/parameters/stellarPopulationSpectraPostprocessUnabsorbedMethods","identity")
+            self.updateMethod(PARAMS,"/parameters/stellarPopulationSpectraPostprocessUnabsorbed","identity")
         if postProcess == "recentUnabsorbed":
-            self.updateRecentMethod(PARAMS,"/parameters/stellarPopulationSpectraPostprocessRecentUnabsorbedMethods","identity")        
+            self.updateRecentMethod(PARAMS,"/parameters/stellarPopulationSpectraPostprocessRecentUnabsorbed","identity")        
         return 
     
         

@@ -38,10 +38,10 @@ class TestParametersMatch(unittest.TestCase):
             PARAMS1.mapTree()
             self.assertTrue(ParametersMatch.match(PARAMS1,PARAMS1))
             PARAMS2 = GalacticusParameters(file=paramfile)
-            path = "/parameters/mergerTreeConstructorMethod/fileNames"
+            path = "/parameters/mergerTreeConstructor/fileNames"
             PARAMS2.setParameter(path,"/home/Galacticus")
             self.assertTrue(ParametersMatch.match(PARAMS1,PARAMS2))
-            path = "/parameters/cosmologyParametersMethod/HubbleConstant"
+            path = "/parameters/cosmologyParameters/HubbleConstant"
             PARAMS2.setParameter(path,9999.9)
             self.assertFalse(ParametersMatch.match(PARAMS1,PARAMS2))
         return

@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import warnings
 
-EXEMPT = ["/parameters/mergerTreeConstructorMethod/fileNames"]
+EXEMPT = ["/parameters/mergerTreeConstructor/fileNames"]
 
 class ParametersMatch(object):
     
