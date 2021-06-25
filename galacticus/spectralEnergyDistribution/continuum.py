@@ -37,7 +37,7 @@ class Continuum(object):
         # Search for filters
         dsets = self.galaxies.GH5Obj.availableDatasets(redshift)
         topHats = fnmatch.filter(dsets,search)
-        # If 'total', replace compoent
+        # If 'total', replace component
         if fnmatch.fnmatch(MATCH.group("component"),"total"):
             topHats = [Filter.replace("disk","total") for Filter in topHats]
         # Add on dust
