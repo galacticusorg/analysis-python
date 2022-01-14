@@ -29,13 +29,21 @@ class EmissionLines(object):
         DATA = self.galaxies.get(redshift,properties=[datasetName])
         return DATA[datasetName].data
         
-    def addLineProfile(self,LINE,MATCH,redshift,wavelengths,luminosities):
+    def addLineProfile(self,LINE,MATCH,redshift,redshiftType,wavelengths,luminosities):
         # Get line luminosity
         lineLuminosity = self.getLineLuminosity(MATCH,redshift,LINE.name)        
         # Get line wavelength
         lineWavelength = np.ones_like(lineLuminosity)*LINE.wavelength
         if fnmatch.fnmatch(MATCH.group("frame"),"observed"):
-            z = self.galaxies.get(redshift,properties=["redshift"])["redshift"].data
+            if redshiftType == "snapshot":
+                z = self.galaxies.get(redshift,properties=["redshift"])["redshift"].data
+            elif redshiftType == "lightconeCosmological":
+                z = self.galaxies.get(redshift,properties=["lightconeRedshiftCosmological"])["lightconeRedshiftCosmological"].data
+            elif redshiftType == "lightconeObserved":
+                z = self.galaxies.get(redshift,properties=["lightconeRedshiftObserved"])["lightconeRedshiftObserved"].data
+            else:
+                warnings.warn("unrecognized redshiftType - assuming 'snapshot'")
+                z = self.galaxies.get(redshift,properties=["redshift"])["redshift"].data
             lineWavelength *= (1.0+z)
         # Get FWHM
         if MATCH.group("lineWidth") is None:
@@ -55,7 +63,7 @@ class EmissionLines(object):
             luminosities += LineProfiles.gaussian(wavelengths,lineWavelength,lineLuminosity,FWHM)
         return
 
-    def sumLineProfiles(self,propertyName,redshift):
+    def sumLineProfiles(self,propertyName,redshift,redshiftType):
         MATCH = parseDatasetName(propertyName)
         # Extract wavelengths for SED
         wavelengths = getSpectralEnergyDistributionWavelengths(propertyName)
@@ -63,7 +71,7 @@ class EmissionLines(object):
         z = self.galaxies.get(redshift,properties=["redshift"])["redshift"].data
         luminosities = np.zeros((len(z),len(wavelengths)),dtype=float)
         # Add in the luminosities for the individual lines
-        [self.addLineProfile(LINE,MATCH,redshift,wavelengths,luminosities) 
+        [self.addLineProfile(LINE,MATCH,redshift,redshiftType,wavelengths,luminosities) 
          for LINE in self.CLOUDY.lines.values()]
         # Convert units. Line profiles are currently in Lsun/Angstrom. We want to convert to per frequency, while requires
         # multiplying by wavelength**2/speedOfLight. We then want this in units of the the AB magnitude system zero point
@@ -72,6 +80,6 @@ class EmissionLines(object):
         luminosities *= conversion
         return luminosities
         
-    def get(self,propertyName,redshift):
-        luminosities = self.sumLineProfiles(propertyName,redshift)
+    def get(self,propertyName,redshift,redshiftType="snapshot"):
+        luminosities = self.sumLineProfiles(propertyName,redshift,redshiftType)
         return luminosities
