@@ -14,7 +14,7 @@ def getEffectiveWavelength(regexMatch,redshift):
     if regexMatch.group('filterName') is not None:
         FILTER = FILTERS.load(regexMatch.group('filterName').replace(":",""))
         wavelength = np.ones_like(redshift)*float(FILTER.effectiveWavelength)
-        if regexMatch.group('frame') == "observed":
+        if regexMatch.group('frame') == "observed" or regexMatch.group('frame') == ":observed":
             wavelength /= (1.0+redshift)            
     else:
         lineName = regexMatch.group("lineName")

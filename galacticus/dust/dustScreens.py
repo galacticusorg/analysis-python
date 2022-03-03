@@ -62,6 +62,13 @@ class DustScreen(Property):
         MATCH = re.search(searchString,propertyName)
         if MATCH is not None:
             return MATCH
+        # Check for stellar SED-derived luminosity
+        searchString = "^(?P<component>disk|spheroid)StellarSED:"+\
+            "(?P<filterName>[^:]+)(?P<frame>:[^:]+)"+\
+            dustRegex+"$"
+        MATCH = re.search(searchString,propertyName)
+        if MATCH is not None:
+            return MATCH
         # Check for emission line luminosity
         searchString = "^(?P<component>disk|spheroid)LineLuminosity:"+\
             "(?P<lineName>[^:]+)(?P<frame>:[^:]+)(?P<filterName>:[^:]+)?"+\
@@ -118,7 +125,10 @@ class DustScreen(Property):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
         assert(self.matches(propertyName,raiseError=True))
         MATCH = self.parseDatasetName(propertyName)
-        return propertyName.replace(MATCH.group('dust'),"")
+        dustFreeName = propertyName.replace(MATCH.group('dust'),"")
+        if re.search("StellarSED",dustFreeName):
+            dustFreeName = dustFreeName.replace(MATCH.group('frame'),"")
+        return dustFreeName
     
     def getDustFreeLuminosity(self,propertyName,redshift):
         """
