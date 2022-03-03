@@ -74,7 +74,7 @@ class CloudyTable(HDF5):
         self.lines = {}
         # Store interpolants
         self.interpolants = ["metallicity","densityHydrogen","ionizingFluxHydrogen",\
-                                 "ionizingFluxHeliumToHydrogen","ionizingFluxOxygenToHydrogen"]
+                                 "ionizingFluxHeliumToHydrogen","ionizingFluxOxygenToHelium"]
         self.interpolantsData = None
         return
 
@@ -85,7 +85,7 @@ class CloudyTable(HDF5):
         Returns:
             list,str : List of emission line names.
         """
-        return self.lsDatasets("/lines")
+        return filter(lambda name: name != "status", self.lsDatasets("/lines"))
     
     def loadEmissionLine(self,line):
         """
@@ -112,7 +112,7 @@ class CloudyTable(HDF5):
         used to store emission line data in :attr:`~lines` attribute.
         """
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        [self.loadEmissionLine(l) for l in self.lsDatasets("/lines") if l not in self.lines.keys()]
+        [self.loadEmissionLine(l) for l in self.lsDatasets("/lines") if l not in self.lines.keys() and l != "status"]
         return
 
     def getInterpolant(self,interpolant):
@@ -186,7 +186,7 @@ class CloudyTable(HDF5):
 
 
     def prepareGalaxyData(self,metallicity,densityHydrogen,ionizingFluxHydrogen,\
-                        ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen):
+                          ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHelium):
         """
         Return zipped list of galaxy data.
 
@@ -195,20 +195,20 @@ class CloudyTable(HDF5):
             densityHydrogen (array_like,{N,}) : Numpy array of galaxy hydrogen gas density.
             ionizingFluxHydrogen (array_like,{N,}) : Numpy array of galaxy Lyman ionizing luminosity.            
             ionizingFluxHeliumToHydrogen (array_like,{N,}) : Numpy array of ratio for galaxy He/Lyman ionizing luminosities.
-            ionizingFluxOxygenToHydrogen (array_like,{N,}) : Numpy array of ratio for galaxy O/Lyman ionizing luminosities.
+            ionizingFluxOxygenToHelium (array_like,{N,}) : Numpy array of ratio for galaxy O/Lyman ionizing luminosities.
             
         Return:
             list : List of Numpy arrays for galaxy properties.
 
         """
         Z = zip(metallicity,densityHydrogen,ionizingFluxHydrogen,
-                ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen)
+                ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHelium)
         if not six.PY2:
             Z = list(Z)
         return Z
     
     def interpolate(self,lineName,metallicity,densityHydrogen,ionizingFluxHydrogen,\
-                        ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen):
+                        ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHelium):
         """
         Interpolate over library of Cloudy HDF5 file to obtain luminosity for specified emission line.
 
@@ -218,7 +218,7 @@ class CloudyTable(HDF5):
             densityHydrogen (array_like,{N,}) : Numpy array of galaxy hydrogen gas density.
             ionizingFluxHydrogen (array_like,{N,}) : Numpy array of galaxy Lyman ionizing luminosity.            
             ionizingFluxHeliumToHydrogen (array_like,{N,}) : Numpy array of ratio for galaxy He/Lyman ionizing luminosities.
-            ionizingFluxOxygenToHydrogen (array_like,{N,}) : Numpy array of ratio for galaxy O/Lyman ionizing luminosities.
+            ionizingFluxOxygenToHelium (array_like,{N,}) : Numpy array of ratio for galaxy O/He ionizing luminosities.
 
         Return:
             array_like,{N,} : Numpy array of galaxy luminosity for specified emission line.
@@ -240,7 +240,7 @@ class CloudyTable(HDF5):
         tableLuminosities = self.lines[lineName].luminosities
         galaxyData = self.prepareGalaxyData(metallicity,densityHydrogen,ionizingFluxHydrogen,\
                                                 ionizingFluxHeliumToHydrogen,\
-                                                ionizingFluxOxygenToHydrogen)
+                                                ionizingFluxOxygenToHelium)
         bounds_error = rcParams.getboolean("cloudy","bounds_error",fallback=False)
         method = rcParams.get("cloudy","method",fallback='linear')
         fill_value = rcParams.get("cloudy","fill_value",fallback=None)

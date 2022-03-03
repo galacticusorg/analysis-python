@@ -104,7 +104,7 @@ class TestCloudyTable(unittest.TestCase):
         densityHydrogen = np.random.rand(N)
         ionizingFluxHydrogen = np.random.rand(N)
         ionizingFluxHeliumToHydrogen = np.random.rand(N)
-        ionizingFluxOxygenToHydrogen = np.random.rand(N)
+        ionizingFluxOxygenToHelium = np.random.rand(N)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")        
             with self.assertRaises(KeyError):
@@ -112,7 +112,7 @@ class TestCloudyTable(unittest.TestCase):
                                         densityHydrogen,
                                         ionizingFluxHydrogen,
                                         ionizingFluxHeliumToHydrogen,
-                                        ionizingFluxOxygenToHydrogen)
+                                        ionizingFluxOxygenToHelium)
         with self.assertRaises(TypeError):
             name = "balmerAlpha6563"
             self.CLOUDY.interpolate(name,metallicity)
@@ -129,15 +129,15 @@ class TestCloudyTable(unittest.TestCase):
         i = self.CLOUDY.getInterpolant("ionizingFluxHeliumToHydrogen")
         diff = i.max() - i.min()
         ionizingFluxHeliumToHydrogen = np.random.rand(N)*diff + i.min()
-        i = self.CLOUDY.getInterpolant("ionizingFluxOxygenToHydrogen")
+        i = self.CLOUDY.getInterpolant("ionizingFluxOxygenToHelium")
         diff = i.max() - i.min()
-        ionizingFluxOxygenToHydrogen = np.random.rand(N)*diff + i.min()
+        ionizingFluxOxygenToHelium = np.random.rand(N)*diff + i.min()
         # Test interpolation
         luminosity = self.CLOUDY.interpolate(name,metallicity,
                                              densityHydrogen,
                                              ionizingFluxHydrogen,
                                              ionizingFluxHeliumToHydrogen,
-                                             ionizingFluxOxygenToHydrogen)
+                                             ionizingFluxOxygenToHelium)
         self.assertIsInstance(luminosity,np.ndarray)
         metallicity[0] *= 1000.0
         rcParams.update("cloudy","fill_value","nan")
@@ -145,13 +145,13 @@ class TestCloudyTable(unittest.TestCase):
                                              densityHydrogen,
                                              ionizingFluxHydrogen,
                                              ionizingFluxHeliumToHydrogen,
-                                             ionizingFluxOxygenToHydrogen)
+                                             ionizingFluxOxygenToHelium)
         self.assertTrue(np.any(np.isnan(luminosity)))
         rcParams.update("cloudy","bounds_error",True)
         self.assertRaises(ValueError,self.CLOUDY.interpolate,name,metallicity,
                           densityHydrogen,ionizingFluxHydrogen,
                           ionizingFluxHeliumToHydrogen,
-                          ionizingFluxOxygenToHydrogen)
+                          ionizingFluxOxygenToHelium)
         return
         
 

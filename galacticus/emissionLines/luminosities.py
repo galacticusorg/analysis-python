@@ -183,27 +183,26 @@ class EmissionLineLuminosity(Property):
         return np.log10(ionizingFluxHydrogen)+50.0
     
     @classmethod
-    def getIonizingFluxRatio(cls,LyLuminosity,XLuminosity):
+    def getIonizingFluxRatio(cls,YLuminosity,XLuminosity):
         """
-        EmissionLineLuminosity.getIonizingFluxRatio(): Compute the ratio of Helium or Oxygen ionizing flux 
-                                                       to Lyman ionizing flux.
+        EmissionLineLuminosity.getIonizingFluxRatio(): Compute the ratio of two ionizing fluxes.
 
-        USAGE: ratio = EmissionLineLuminosity.getIonizingFluxRatio(LymanLuminosity,XLuminosity)
+        USAGE: ratio = EmissionLineLuminosity.getIonizingFluxRatio(YLuminosity,XLuminosity)
 
            INPUTS
-              LymanLuminosity -- Lyman continuum luminosity.
-              XLuminosity     -- Helium or Oxygen luminosity.
+              YLuminosity -- denominator luminosity.
+              XLuminosity -- numerator Oxygen luminosity.
               
            OUTPUTS
-              ratio           -- log10 of ionizing flux ratio..
+              ratio       -- log10 of ionizing flux ratio, log10(X/Y).
 
         """
         funcname = cls.__class__.__name__+"."+sys._getframe().f_code.co_name
-        LymanFlux = np.copy(LyLuminosity)        
-        np.place(LymanFlux,LymanFlux==0.0,np.nan)
+        YFlux = np.copy(YLuminosity)        
+        np.place(YFlux,YFlux==0.0,np.nan)
         XFlux = np.copy(XLuminosity)
         np.place(XFlux,XFlux==0.0,np.nan)
-        return np.log10(XFlux/LymanFlux)
+        return np.log10(XFlux/YFlux)
 
     @classmethod
     def getMassHIIRegions(cls):
@@ -403,8 +402,8 @@ class EmissionLineLuminosity(Property):
         ionizingFluxHydrogen -= np.copy(np.log10(numberHIIRegion))
         numberHIIRegion[mask] = 0.0
         # iv) Luminosity ratios He/H and Ox/H 
-        ionizingFluxHeliumToHydrogen = self.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[HeliumName].data)
-        ionizingFluxOxygenToHydrogen = self.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[OxygenName].data)
+        ionizingFluxHeliumToHydrogen = self.getIonizingFluxRatio(FLUXES[LymanName ].data,FLUXES[HeliumName].data)
+        ionizingFluxOxygenToHelium   = self.getIonizingFluxRatio(FLUXES[HeliumName].data,FLUXES[OxygenName].data)
         # Truncate properties to table bounds where necessary to avoid unphysical extrapolations.
         #
         ## Hydrogen density and H-ionizing flux are truncated at both the lower and upper extent
@@ -423,7 +422,7 @@ class EmissionLineLuminosity(Property):
         metallicityTable                  = self.CLOUDY.getInterpolant('metallicity'                 )
         ionizingFluxHydrogenTable         = self.CLOUDY.getInterpolant('ionizingFluxHydrogen'        )
         ionizingFluxHeliumToHydrogenTable = self.CLOUDY.getInterpolant('ionizingFluxHeliumToHydrogen')
-        ionizingFluxOxygenToHydrogenTable = self.CLOUDY.getInterpolant('ionizingFluxOxygenToHydrogen')
+        ionizingFluxOxygenToHeliumTable   = self.CLOUDY.getInterpolant('ionizingFluxOxygenToHelium'  )
         boundLowHydrogenGasDensity            = hydrogenGasDensity           < hydrogenGasDensityTable          [ 0]
         boundHighHydrogenGasDensity           = hydrogenGasDensity           > hydrogenGasDensityTable          [-1]
         boundHighMetallicity                  = metallicity                  > metallicityTable                 [-1]
@@ -431,8 +430,8 @@ class EmissionLineLuminosity(Property):
         boundHighIonizingFluxHydrogen         = ionizingFluxHydrogen         > ionizingFluxHydrogenTable        [-1]
         boundLowIonizingFluxHeliumToHydrogen  = ionizingFluxHeliumToHydrogen < ionizingFluxHeliumToHydrogenTable[ 0]
         boundHighIonizingFluxHeliumToHydrogen = ionizingFluxHeliumToHydrogen > ionizingFluxHeliumToHydrogenTable[-1]
-        boundLowIonizingFluxOxygenToHydrogen  = ionizingFluxOxygenToHydrogen < ionizingFluxOxygenToHydrogenTable[ 0]
-        boundHighIonizingFluxOxygenToHydrogen = ionizingFluxOxygenToHydrogen > ionizingFluxOxygenToHydrogenTable[-1]
+        boundLowIonizingFluxOxygenToHelium    = ionizingFluxOxygenToHelium   < ionizingFluxOxygenToHeliumTable  [ 0]
+        boundHighIonizingFluxOxygenToHelium   = ionizingFluxOxygenToHelium   > ionizingFluxOxygenToHeliumTable  [-1]
         ionizingFluxMultiplier                = np.zeros(ionizingFluxHydrogen.shape)
         hydrogenGasDensity          [boundLowHydrogenGasDensity           ] =  hydrogenGasDensityTable          [ 0]
         hydrogenGasDensity          [boundHighHydrogenGasDensity          ] =  hydrogenGasDensityTable          [-1]
@@ -443,8 +442,8 @@ class EmissionLineLuminosity(Property):
         ionizingFluxHydrogen        [boundHighIonizingFluxHydrogen        ] =  ionizingFluxHydrogenTable        [-1]
         ionizingFluxHeliumToHydrogen[boundLowIonizingFluxHeliumToHydrogen ] =  ionizingFluxHeliumToHydrogenTable[ 0]
         ionizingFluxHeliumToHydrogen[boundHighIonizingFluxHeliumToHydrogen] =  ionizingFluxHeliumToHydrogenTable[-1]
-        ionizingFluxOxygenToHydrogen[boundLowIonizingFluxOxygenToHydrogen ] =  ionizingFluxOxygenToHydrogenTable[ 0]
-        ionizingFluxOxygenToHydrogen[boundHighIonizingFluxOxygenToHydrogen] =  ionizingFluxOxygenToHydrogenTable[-1]
+        ionizingFluxOxygenToHelium  [boundLowIonizingFluxOxygenToHelium   ] =  ionizingFluxOxygenToHeliumTable  [ 0]
+        ionizingFluxOxygenToHelium  [boundHighIonizingFluxOxygenToHelium  ] =  ionizingFluxOxygenToHeliumTable  [-1]
         # Create Dataset() instance        
         DATA = Dataset(name=propertyName)
         attr = {"unitsInSI":luminositySolar}
@@ -454,10 +453,10 @@ class EmissionLineLuminosity(Property):
         # Pass properties to CloudyTable() class for interpolation
         DATA.data = np.copy(self.CLOUDY.interpolate(MATCH.group("lineName"),metallicity,hydrogenGasDensity,\
                                                         ionizingFluxHydrogen,ionizingFluxHeliumToHydrogen,\
-                                                        ionizingFluxOxygenToHydrogen))        
+                                                        ionizingFluxOxygenToHelium))        
         # Clear memory
         del metallicity,hydrogenGasDensity,ionizingFluxHydrogen
-        del ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHydrogen
+        del ionizingFluxHeliumToHydrogen,ionizingFluxOxygenToHelium
         # Get luminosity multiplier
         luminosityMultiplier = self.getLuminosityMultiplier(propertyName,redshift)
         # Convert units of luminosity 

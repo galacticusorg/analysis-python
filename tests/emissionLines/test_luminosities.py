@@ -260,10 +260,10 @@ class TestLuminosities(unittest.TestCase):
                 numberHIIRegion[mask] = 1.0
                 ionizingFluxHydrogen -= np.log10(numberHIIRegion)
                 ionizingFluxHeliumToHydrogen = self.LINES.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[HeliumName].data)
-                ionizingFluxOxygenToHydrogen = self.LINES.getIonizingFluxRatio(FLUXES[LymanName].data,FLUXES[OxygenName].data)
+                ionizingFluxOxygenToHelium = self.LINES.getIonizingFluxRatio(FLUXES[HeliumName].data,FLUXES[OxygenName].data)
                 luminosity = np.copy(self.LINES.CLOUDY.interpolate(line,metallicity,hydrogenGasDensity,
                                                                    ionizingFluxHydrogen,ionizingFluxHeliumToHydrogen,
-                                                                   ionizingFluxOxygenToHydrogen))
+                                                                   ionizingFluxOxygenToHelium))
                 luminosityMultiplier = self.LINES.getLuminosityMultiplier(name,redshift)
                 luminosity *= (luminosityMultiplier*numberHIIRegion*erg/luminositySolar)
                 zeroCorrection = rcParams.getfloat("emissionLine","zeroCorrection",fallback=1.0e-50)
