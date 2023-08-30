@@ -497,8 +497,8 @@ class checkOutputFiles(object):
             self.corrupted.append(hdf5File)
         else:
             attrib = GH5.readAttributes("/")
-            if "galacticusCompleted" in attrib.keys():
-                if bool(attrib["galacticusCompleted"]):
+            if "statusCompletion" in attrib.keys():
+                if bool(attrib["statusCompletion"]):
                     self.complete.append(hdf5File)
                 else:
                     self.incomplete.append(hdf5File)

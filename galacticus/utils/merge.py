@@ -70,7 +70,7 @@ class MergeGalacticusHDF5(object):
             
     def fileComplete(self,hdfObj):
         funcname = self.__class__.__name__+"."+sys._getframe().f_code.co_name
-        name = "galacticusCompleted"
+        name = "statusCompletion"
         attr = hdfObj.readAttributes("/")
         if name not in attr.keys():
             return False
